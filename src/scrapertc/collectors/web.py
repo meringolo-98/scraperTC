@@ -193,3 +193,56 @@ def collect_youtube(http: Http, settings: Settings, limit: int) -> list[ChatterI
                 )
             )
     return _dedupe(items)
+
+
+def collect_brave(http: Http, settings: Settings, limit: int) -> list[ChatterItem]:
+    """Independent web index — the Gate 1 replacement for Google CSE."""
+    if not enabled("brave"):
+        return []
+    if not settings.brave_api_key:
+        return []
+    items: list[ChatterItem] = []
+    headers = {
+        "Accept": "application/json",
+        "X-Subscription-Token": settings.brave_api_key,
+    }
+    queries = live_queries(priority_cap=6, broad_cap=10)
+    for query in queries:
+        for scope in web_scopes():
+            q = f"{query} {scope}".strip()
+            offsets = [0, 1] if not scope else [0]
+            for offset in offsets:
+                data = http.get_json(
+                    "https://api.search.brave.com/res/v1/web/search",
+                    params={
+                        "q": q,
+                        "count": min(20, max(limit, 10)),
+                        "offset": offset,
+                        "freshness": "pm",
+                        "country": "us",
+                        "search_lang": "en",
+                    },
+                    headers=headers,
+                )
+                if not isinstance(data, dict):
+                    break
+                results = (data.get("web") or {}).get("results") or []
+                if not results:
+                    break
+                for row in results:
+                    url = row.get("url") or ""
+                    title = row.get("title") or ""
+                    if not url or not title:
+                        continue
+                    items.append(
+                        item(
+                            source=_source_from_url(url),
+                            url=url,
+                            title=title,
+                            body=row.get("description") or "",
+                            published_at=row.get("page_age") or row.get("age"),
+                            query=q,
+                            extra={"engine": "brave"},
+                        )
+                    )
+    return _dedupe(items)

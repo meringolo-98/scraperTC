@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "scrapertc"
 version = "0.1.0"
-description = "Chatter pickup for cannabis tissue culture, TC companies, and genomic predictive breeding."
+description = "Scraper for cannabis tissue culture chatter. Collect, store, dump JSONL. Not a chatbot."
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [{ name = "Matt Meringolo" }]

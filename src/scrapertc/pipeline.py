@@ -6,12 +6,14 @@ from scrapertc.collectors.github import collect_github
 from scrapertc.collectors.inbox import collect_inbox
 from scrapertc.collectors.scholarly import (
     collect_arxiv,
+    collect_crossref,
     collect_openalex,
     collect_pubmed,
+    collect_semanticscholar,
     collect_stackexchange,
 )
 from scrapertc.collectors.social import collect_bluesky, collect_hackernews, collect_reddit
-from scrapertc.collectors.web import collect_google_cse, collect_rss, collect_youtube
+from scrapertc.collectors.web import collect_brave, collect_google_cse, collect_rss, collect_youtube
 from scrapertc.gate2 import classify
 from scrapertc.gate2.report import write_reports
 from scrapertc.http import Http
@@ -27,10 +29,13 @@ COLLECTORS: CollectorMap = {
     "bluesky": collect_bluesky,
     "rss": collect_rss,
     "youtube": collect_youtube,
+    "brave": collect_brave,
     "google_cse": collect_google_cse,
     "openalex": collect_openalex,
     "pubmed": collect_pubmed,
     "arxiv": collect_arxiv,
+    "semanticscholar": collect_semanticscholar,
+    "crossref": collect_crossref,
     "stackexchange": collect_stackexchange,
     "github": collect_github,
     "inbox": collect_inbox,
@@ -84,7 +89,9 @@ def collect(
     written = store.upsert_items(gathered)
     stats: dict[str, int | str] = {
         "collected": len(gathered),
-        "upserted": written,
+        "new": written["new"],
+        "updated": written["updated"],
+        "upserted": written["written"],
         "search_mode": "broad" if broad else "priority",
         **{f"collector:{k}": v for k, v in per_source.items()},
     }

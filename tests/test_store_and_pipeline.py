@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import json
+
 from scrapertc.demo import demo_items
 from scrapertc.gate2.report import render_markdown
 from scrapertc.models import canonicalize_url, make_item_id
-from scrapertc.pipeline import collect, refine, report
+from scrapertc.pipeline import COLLECTORS, collect, refine, report
 from scrapertc.store import Store
 
 
@@ -20,9 +22,30 @@ def test_ids_are_stable() -> None:
 
 def test_upsert_is_idempotent(store: Store) -> None:
     items = demo_items()
-    store.upsert_items(items)
-    store.upsert_items(items)
+    first = store.upsert_items(items)
+    assert first["new"] == len(items)
+    assert first["updated"] == 0
+    second = store.upsert_items(items)
+    assert second["new"] == 0
+    assert second["updated"] == len(items)
     assert store.counts()["chatter"] == len(items)
+
+
+def test_export_jsonl(store: Store, tmp_path) -> None:
+    store.upsert_items(demo_items())
+    path = tmp_path / "export.jsonl"
+    n = store.export_jsonl(path)
+    assert n == len(demo_items())
+    row = json.loads(path.read_text(encoding="utf-8").splitlines()[0])
+    assert row["url"]
+    assert row["hit_count"] == 1
+    assert row["first_seen"]
+
+
+def test_collectors_are_wired() -> None:
+    for name in ("brave", "semanticscholar", "crossref", "reddit", "openalex"):
+        assert name in COLLECTORS
+        assert callable(COLLECTORS[name])
 
 
 def test_pipeline_demo(tmp_path, settings) -> None:

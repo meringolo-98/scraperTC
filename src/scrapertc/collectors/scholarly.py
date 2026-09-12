@@ -14,22 +14,29 @@ def collect_openalex(http: Http, settings: Settings, limit: int) -> list[Chatter
     items: list[ChatterItem] = []
     headers = {"User-Agent": settings.user_agent}
     for query in live_queries():
-        data = http.get_json(
-            "https://api.openalex.org/works",
-            params={
+        cursor = "*"
+        for _page in range(2):
+            params = {
                 "search": query,
                 "per_page": min(limit, 50),
                 "sort": "publication_date:desc",
                 "mailto": settings.contact_email,
-            },
-            headers=headers,
-        )
-        if not isinstance(data, dict):
-            continue
-        for work in data.get("results") or []:
-            parsed = _openalex_item(work, query)
-            if parsed:
-                items.append(parsed)
+                "cursor": cursor,
+            }
+            data = http.get_json(
+                "https://api.openalex.org/works",
+                params=params,
+                headers=headers,
+            )
+            if not isinstance(data, dict):
+                break
+            for work in data.get("results") or []:
+                parsed = _openalex_item(work, query)
+                if parsed:
+                    items.append(parsed)
+            cursor = (data.get("meta") or {}).get("next_cursor")
+            if not cursor:
+                break
     return _dedupe(items)
 
 
@@ -208,6 +215,131 @@ def collect_stackexchange(http: Http, settings: Settings, limit: int) -> list[Ch
                 )
             )
     return _dedupe(items)
+
+
+def collect_semanticscholar(http: Http, settings: Settings, limit: int) -> list[ChatterItem]:
+    if not enabled("semanticscholar"):
+        return []
+    items: list[ChatterItem] = []
+    headers = None
+    if settings.semantic_scholar_api_key:
+        headers = {"x-api-key": settings.semantic_scholar_api_key}
+    for query in live_queries(priority_cap=4, broad_cap=6):
+        offset = 0
+        for _page in range(2):
+            data = http.get_json(
+                "https://api.semanticscholar.org/graph/v1/paper/search",
+                params={
+                    "query": query,
+                    "offset": offset,
+                    "limit": min(limit, 50),
+                    "fields": "title,abstract,url,year,authors,publicationDate,externalIds",
+                },
+                headers=headers,
+            )
+            if not isinstance(data, dict):
+                break
+            for row in data.get("data") or []:
+                parsed = _semanticscholar_item(row, query)
+                if parsed:
+                    items.append(parsed)
+            nxt = data.get("next")
+            if nxt is None:
+                break
+            offset = int(nxt)
+    return _dedupe(items)
+
+
+def _semanticscholar_item(row: dict[str, Any], query: str) -> ChatterItem | None:
+    title = row.get("title") or ""
+    if not title:
+        return None
+    url = row.get("url") or ""
+    ext = row.get("externalIds") or {}
+    if not url and ext.get("DOI"):
+        url = f"https://doi.org/{ext['DOI']}"
+    authors = [a.get("name") for a in (row.get("authors") or [])[:4] if a.get("name")]
+    return item(
+        source="semanticscholar",
+        url=url or f"https://www.semanticscholar.org/paper/{row.get('paperId')}",
+        title=title,
+        body=row.get("abstract") or "",
+        author=", ".join(authors) or None,
+        published_at=row.get("publicationDate") or str(row.get("year") or ""),
+        query=query,
+        extra={"paper_id": row.get("paperId")},
+    )
+
+
+def collect_crossref(http: Http, settings: Settings, limit: int) -> list[ChatterItem]:
+    if not enabled("crossref"):
+        return []
+    items: list[ChatterItem] = []
+    headers = {"User-Agent": settings.user_agent}
+    for query in live_queries(priority_cap=4, broad_cap=6):
+        cursor = "*"
+        for _page in range(2):
+            data = http.get_json(
+                "https://api.crossref.org/works",
+                params={
+                    "query": query,
+                    "rows": min(limit, 50),
+                    "sort": "published",
+                    "order": "desc",
+                    "cursor": cursor,
+                    "mailto": settings.contact_email,
+                },
+                headers=headers,
+            )
+            if not isinstance(data, dict):
+                break
+            message = data.get("message") or {}
+            for row in message.get("items") or []:
+                parsed = _crossref_item(row, query)
+                if parsed:
+                    items.append(parsed)
+            cursor = message.get("next-cursor")
+            if not cursor or not (message.get("items") or []):
+                break
+    return _dedupe(items)
+
+
+def _crossref_item(row: dict[str, Any], query: str) -> ChatterItem | None:
+    titles = row.get("title") or []
+    title = titles[0] if titles else ""
+    if not title:
+        return None
+    doi = row.get("DOI") or ""
+    url = row.get("URL") or (f"https://doi.org/{doi}" if doi else "")
+    if not url:
+        return None
+    authors = []
+    for auth in (row.get("author") or [])[:4]:
+        name = f"{auth.get('given') or ''} {auth.get('family') or ''}".strip()
+        if name:
+            authors.append(name)
+    containers = row.get("container-title") or []
+    return item(
+        source="crossref",
+        url=url,
+        title=title,
+        body=(row.get("abstract") or "")[:2000],
+        author=", ".join(authors) or None,
+        published_at=_crossref_date(row),
+        query=query,
+        extra={"doi": doi, "journal": containers[0] if containers else None},
+    )
+
+
+def _crossref_date(row: dict[str, Any]) -> str | None:
+    parts = ((row.get("issued") or {}).get("date-parts") or [[]])[0]
+    if len(parts) >= 3:
+        return f"{int(parts[0]):04d}-{int(parts[1]):02d}-{int(parts[2]):02d}"
+    if len(parts) == 2:
+        return f"{int(parts[0]):04d}-{int(parts[1]):02d}"
+    if parts:
+        return str(parts[0])
+    return None
 
 
 def _dedupe(items: list[ChatterItem]) -> list[ChatterItem]:

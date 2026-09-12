@@ -35,9 +35,22 @@ class Http:
         headers: dict[str, str] | None = None,
         auth: httpx.Auth | tuple[str, str] | None = None,
     ) -> httpx.Response:
-        self._pace()
-        response = self._client.get(url, params=params, headers=headers, auth=auth)
-        return response
+        last: httpx.Response | None = None
+        for attempt in range(3):
+            self._pace()
+            try:
+                last = self._client.get(url, params=params, headers=headers, auth=auth)
+            except httpx.TransportError:
+                if attempt == 2:
+                    raise
+                time.sleep(1.5 * (attempt + 1))
+                continue
+            if last.status_code in {429, 500, 502, 503, 504} and attempt < 2:
+                time.sleep(1.5 * (attempt + 1))
+                continue
+            return last
+        assert last is not None
+        return last
 
     def get_json(
         self,

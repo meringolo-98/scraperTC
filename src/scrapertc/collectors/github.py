@@ -55,4 +55,15 @@ def collect_github(http: Http, settings: Settings, limit: int) -> list[ChatterIt
                         query="issue",
                     )
                 )
-    return items
+    return _dedupe(items)
+
+
+def _dedupe(items: list[ChatterItem]) -> list[ChatterItem]:
+    seen: set[str] = set()
+    unique: list[ChatterItem] = []
+    for entry in items:
+        if entry.id in seen:
+            continue
+        seen.add(entry.id)
+        unique.append(entry)
+    return unique

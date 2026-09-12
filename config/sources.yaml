@@ -50,6 +50,12 @@ collectors:
       - gardening
   google_cse:
     enabled: true
+  brave:
+    enabled: true
+  semanticscholar:
+    enabled: true
+  crossref:
+    enabled: true
   inbox:
     enabled: true
     directory: data/inbox

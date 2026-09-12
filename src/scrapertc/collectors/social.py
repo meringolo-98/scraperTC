@@ -18,34 +18,66 @@ def collect_reddit(http: Http, settings: Settings, limit: int) -> list[ChatterIt
     items: list[ChatterItem] = []
     reddit_q = str(conf.get("search_query") or "cannabis tissue culture OR meristem OR HLVd")
     for query in live_queries():
-        data = http.get_json(
-            f"{host}/search.json",
-            params={"q": query, "sort": "new", "limit": min(limit, 100), "t": "month"},
-            headers=headers,
+        items.extend(
+            _reddit_paged(
+                http,
+                f"{host}/search.json",
+                {"q": query, "sort": "new", "limit": min(limit, 100), "t": "month"},
+                headers,
+                query,
+            )
         )
-        items.extend(_reddit_children(data, query))
     listing_subs = conf.get("subreddits") or []
     search_subs = list(listing_subs) + list(conf.get("search_subreddits") or [])
     for sub in search_subs:
-        data = http.get_json(
-            f"{host}/r/{sub}/search.json",
-            params={
-                "q": reddit_q,
-                "restrict_sr": "1",
-                "sort": "new",
-                "limit": min(limit, 100),
-            },
-            headers=headers,
+        items.extend(
+            _reddit_paged(
+                http,
+                f"{host}/r/{sub}/search.json",
+                {
+                    "q": reddit_q,
+                    "restrict_sr": "1",
+                    "sort": "new",
+                    "limit": min(limit, 100),
+                },
+                headers,
+                f"r/{sub}",
+            )
         )
-        items.extend(_reddit_children(data, f"r/{sub}"))
     for sub in listing_subs:
-        listing = http.get_json(
-            f"{host}/r/{sub}/new.json",
-            params={"limit": min(limit, 50)},
-            headers=headers,
+        items.extend(
+            _reddit_paged(
+                http,
+                f"{host}/r/{sub}/new.json",
+                {"limit": min(limit, 50)},
+                headers,
+                f"r/{sub}/new",
+            )
         )
-        items.extend(_reddit_children(listing, f"r/{sub}/new"))
     return _dedupe(items)
+
+
+def _reddit_paged(
+    http: Http,
+    url: str,
+    params: dict[str, Any],
+    headers: dict[str, str] | None,
+    query: str,
+    pages: int = 2,
+) -> list[ChatterItem]:
+    items: list[ChatterItem] = []
+    after = None
+    for _ in range(pages):
+        page_params = dict(params)
+        if after:
+            page_params["after"] = after
+        data = http.get_json(url, params=page_params, headers=headers)
+        items.extend(_reddit_children(data, query))
+        nxt = ((data or {}).get("data") or {}).get("after") if isinstance(data, dict) else None
+        if not nxt or nxt == after:
+            break
+        after = nxt
+    return items
 
 
 def _reddit_token(http: Http, settings: Settings) -> str | None:
@@ -105,29 +137,40 @@ def collect_hackernews(http: Http, settings: Settings, limit: int) -> list[Chatt
     del settings
     items: list[ChatterItem] = []
     for query in live_queries():
-        data = http.get_json(
-            "https://hn.algolia.com/api/v1/search",
-            params={"query": query, "hitsPerPage": min(limit, 50), "tags": "story"},
-        )
-        if not isinstance(data, dict):
-            continue
-        for hit in data.get("hits") or []:
-            url = hit.get("url") or f"https://news.ycombinator.com/item?id={hit.get('objectID')}"
-            title = hit.get("title") or ""
-            if not title:
-                continue
-            items.append(
-                item(
-                    source="hackernews",
-                    url=url,
-                    title=title,
-                    body=hit.get("story_text") or "",
-                    author=hit.get("author"),
-                    published_at=hit.get("created_at"),
-                    query=query,
-                    extra={"points": hit.get("points"), "num_comments": hit.get("num_comments")},
-                )
+        for page in range(2):
+            data = http.get_json(
+                "https://hn.algolia.com/api/v1/search",
+                params={
+                    "query": query,
+                    "hitsPerPage": min(limit, 50),
+                    "tags": "story",
+                    "page": page,
+                },
             )
+            if not isinstance(data, dict):
+                break
+            for hit in data.get("hits") or []:
+                url = hit.get("url") or f"https://news.ycombinator.com/item?id={hit.get('objectID')}"
+                title = hit.get("title") or ""
+                if not title:
+                    continue
+                items.append(
+                    item(
+                        source="hackernews",
+                        url=url,
+                        title=title,
+                        body=hit.get("story_text") or "",
+                        author=hit.get("author"),
+                        published_at=hit.get("created_at"),
+                        query=query,
+                        extra={
+                            "points": hit.get("points"),
+                            "num_comments": hit.get("num_comments"),
+                        },
+                    )
+                )
+            if page + 1 >= int(data.get("nbPages") or 1):
+                break
     return _dedupe(items)
 
 
@@ -137,32 +180,40 @@ def collect_bluesky(http: Http, settings: Settings, limit: int) -> list[ChatterI
     del settings
     items: list[ChatterItem] = []
     for query in live_queries():
-        data = http.get_json(
-            "https://public.api.bsky.app/xrpc/app.bsky.feed.searchPosts",
-            params={"q": query, "limit": min(limit, 50)},
-        )
-        if not isinstance(data, dict):
-            continue
-        for post in data.get("posts") or []:
-            author = (post.get("author") or {}).get("handle")
-            record = post.get("record") or {}
-            uri = post.get("uri") or ""
-            rkey = uri.rsplit("/", 1)[-1] if uri else ""
-            url = f"https://bsky.app/profile/{author}/post/{rkey}" if author and rkey else uri
-            text = record.get("text") or ""
-            if not text:
-                continue
-            items.append(
-                item(
-                    source="bluesky",
-                    url=url,
-                    title=text[:140],
-                    body=text,
-                    author=author,
-                    published_at=record.get("createdAt") or post.get("indexedAt"),
-                    query=query,
-                )
+        cursor: str | None = None
+        for _page in range(2):
+            params: dict[str, Any] = {"q": query, "limit": min(limit, 50)}
+            if cursor:
+                params["cursor"] = cursor
+            data = http.get_json(
+                "https://public.api.bsky.app/xrpc/app.bsky.feed.searchPosts",
+                params=params,
             )
+            if not isinstance(data, dict):
+                break
+            for post in data.get("posts") or []:
+                author = (post.get("author") or {}).get("handle")
+                record = post.get("record") or {}
+                uri = post.get("uri") or ""
+                rkey = uri.rsplit("/", 1)[-1] if uri else ""
+                url = f"https://bsky.app/profile/{author}/post/{rkey}" if author and rkey else uri
+                text = record.get("text") or ""
+                if not text:
+                    continue
+                items.append(
+                    item(
+                        source="bluesky",
+                        url=url,
+                        title=text[:140],
+                        body=text,
+                        author=author,
+                        published_at=record.get("createdAt") or post.get("indexedAt"),
+                        query=query,
+                    )
+                )
+            cursor = data.get("cursor")
+            if not cursor:
+                break
     return _dedupe(items)
 
 

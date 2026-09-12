@@ -53,6 +53,8 @@ class Settings(BaseSettings):
     reddit_client_secret: str = ""
     reddit_user_agent: str = ""
     github_token: str = ""
+    brave_api_key: str = ""
+    semantic_scholar_api_key: str = ""
     scrapertc_db: str = "data/chatter.db"
 
     user_agent: str = Field(default="")

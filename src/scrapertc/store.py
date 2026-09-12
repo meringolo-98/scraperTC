@@ -19,6 +19,9 @@ CREATE TABLE IF NOT EXISTS chatter (
     author TEXT,
     published_at TEXT,
     collected_at TEXT NOT NULL,
+    first_seen TEXT,
+    last_seen TEXT,
+    hit_count INTEGER DEFAULT 1,
     query TEXT,
     extra_json TEXT
 );
@@ -64,49 +67,94 @@ class Store:
         self._conn.commit()
 
     def _migrate(self) -> None:
-        cols = {row[1] for row in self._conn.execute("PRAGMA table_info(signals)")}
-        if cols and "relevance" not in cols:
+        signal_cols = {row[1] for row in self._conn.execute("PRAGMA table_info(signals)")}
+        if signal_cols and "relevance" not in signal_cols:
             self._conn.execute("ALTER TABLE signals ADD COLUMN relevance REAL DEFAULT 0")
-        if cols and "segments_json" not in cols:
+        if signal_cols and "segments_json" not in signal_cols:
             self._conn.execute("ALTER TABLE signals ADD COLUMN segments_json TEXT")
+        chatter_cols = {row[1] for row in self._conn.execute("PRAGMA table_info(chatter)")}
+        if chatter_cols and "first_seen" not in chatter_cols:
+            self._conn.execute("ALTER TABLE chatter ADD COLUMN first_seen TEXT")
+        if chatter_cols and "last_seen" not in chatter_cols:
+            self._conn.execute("ALTER TABLE chatter ADD COLUMN last_seen TEXT")
+        if chatter_cols and "hit_count" not in chatter_cols:
+            self._conn.execute("ALTER TABLE chatter ADD COLUMN hit_count INTEGER DEFAULT 1")
+        self._conn.execute(
+            """
+            UPDATE chatter
+            SET first_seen = COALESCE(first_seen, collected_at),
+                last_seen = COALESCE(last_seen, collected_at),
+                hit_count = COALESCE(hit_count, 1)
+            """
+        )
 
     def close(self) -> None:
         self._conn.close()
 
-    def upsert_items(self, items: Iterable[ChatterItem]) -> int:
-        inserted = 0
+    def upsert_items(self, items: Iterable[ChatterItem]) -> dict[str, int]:
+        new = 0
+        updated = 0
         for item in items:
             extra = json.dumps(item.extra)
-            cur = self._conn.execute(
-                """
-                INSERT INTO chatter (
-                    id, source, url, title, body, author, published_at,
-                    collected_at, query, extra_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(id) DO UPDATE SET
-                    title=excluded.title,
-                    body=excluded.body,
-                    author=excluded.author,
-                    published_at=COALESCE(excluded.published_at, chatter.published_at),
-                    extra_json=excluded.extra_json
-                """,
-                (
-                    item.id,
-                    item.source,
-                    item.url,
-                    item.title,
-                    item.body,
-                    item.author,
-                    item.published_at.isoformat() if item.published_at else None,
-                    item.collected_at.isoformat(),
-                    item.query,
-                    extra,
-                ),
-            )
-            if cur.rowcount:
-                inserted += 1
+            seen = item.collected_at.isoformat()
+            published = item.published_at.isoformat() if item.published_at else None
+            existing = self._conn.execute(
+                "SELECT id FROM chatter WHERE id = ?", (item.id,)
+            ).fetchone()
+            if existing:
+                self._conn.execute(
+                    """
+                    UPDATE chatter SET
+                        title = ?,
+                        body = ?,
+                        author = ?,
+                        published_at = COALESCE(?, published_at),
+                        last_seen = ?,
+                        hit_count = COALESCE(hit_count, 1) + 1,
+                        extra_json = ?
+                    WHERE id = ?
+                    """,
+                    (item.title, item.body, item.author, published, seen, extra, item.id),
+                )
+                updated += 1
+            else:
+                self._conn.execute(
+                    """
+                    INSERT INTO chatter (
+                        id, source, url, title, body, author, published_at,
+                        collected_at, first_seen, last_seen, hit_count, query, extra_json
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+                    """,
+                    (
+                        item.id,
+                        item.source,
+                        item.url,
+                        item.title,
+                        item.body,
+                        item.author,
+                        published,
+                        seen,
+                        seen,
+                        seen,
+                        item.query,
+                        extra,
+                    ),
+                )
+                new += 1
         self._conn.commit()
-        return inserted
+        return {"new": new, "updated": updated, "written": new + updated}
+
+    def export_jsonl(self, path: Path, *, labeled_only: bool = False) -> int:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        rows = self.classified_rows()
+        if labeled_only:
+            rows = [row for row in rows if row.get("labels")]
+        n = 0
+        with path.open("w", encoding="utf-8") as fh:
+            for row in rows:
+                fh.write(json.dumps(row, ensure_ascii=False, default=str) + "\n")
+                n += 1
+        return n
 
     def upsert_signals(self, signals: Iterable[Signal]) -> int:
         count = 0

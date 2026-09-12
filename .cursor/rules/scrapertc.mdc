@@ -1,16 +1,17 @@
 ---
-description: scraperTC two-gate cannabis TC and genomic-breeding chatter pipeline
+description: scraperTC is a scraper, not a research chatbot
 alwaysApply: true
 ---
 
 # scraperTC
 
-Competitive-intel intake for a cannabis tissue culture / remediation lab **and** a genomic prediction company that sells to breeders.
+This product is a **chatter scraper**. It is not ChatGPT, Fable, Asta, or any other LLM researcher.
 
-- **Gate 1** default is the six `priority` queries. `--broad` also searches TC companies, genomics, and cannabis tech lists. Gate 2 still filters.
-- **Gate 2** scores **competition**, **breakthroughs**, **saturation**, plus **relevance** and segments (`cannabis_tc`, `remediation`, `tc_company`, `genomic_prediction`, `cannabis_tech`).
-- Keep orchid/banana hobby noise low-relevance. Keep mammalian cell culture off-domain.
-- Prefer official / public APIs. No login scrapers or unofficial LinkedIn/Meta/X HTML harvest.
-- Collectors must fail independently.
+- **Gate 1** hits public APIs + Brave Search, paginates, retries, dedupes, and writes SQLite. No LLM in the collect path. Never add one.
+- Default search is the six `priority` queries. `--broad` also searches TC companies, genomics, and cannabis tech lists.
+- **Gate 2** is an optional **deterministic** ranker (competition / breakthrough / saturation / relevance). Not a chatbot. Do not replace it with a model call.
+- Persist every hit. Track `first_seen` / `last_seen` / `hit_count`. Export JSONL. That dump is the deliverable.
+- Prefer official / public APIs. No login scrapers, no unofficial LinkedIn/Meta/X HTML harvest, no scraping google.com SERP HTML.
+- Collectors must fail independently. Brave is the web-wide index; Google CSE is legacy.
 
 Tune search in `config/keywords.yaml` (`priority` first), names in `config/competitors.yaml`, sources in `config/sources.yaml`.

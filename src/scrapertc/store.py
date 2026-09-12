@@ -29,7 +29,9 @@ CREATE TABLE IF NOT EXISTS signals (
     competition REAL,
     breakthrough REAL,
     saturation REAL,
+    relevance REAL,
     labels_json TEXT,
+    segments_json TEXT,
     entities_json TEXT,
     rationale TEXT,
     classified_at TEXT,
@@ -58,7 +60,15 @@ class Store:
         self._conn.row_factory = sqlite3.Row
         self._conn.execute("PRAGMA foreign_keys = ON")
         self._conn.executescript(SCHEMA)
+        self._migrate()
         self._conn.commit()
+
+    def _migrate(self) -> None:
+        cols = {row[1] for row in self._conn.execute("PRAGMA table_info(signals)")}
+        if cols and "relevance" not in cols:
+            self._conn.execute("ALTER TABLE signals ADD COLUMN relevance REAL DEFAULT 0")
+        if cols and "segments_json" not in cols:
+            self._conn.execute("ALTER TABLE signals ADD COLUMN segments_json TEXT")
 
     def close(self) -> None:
         self._conn.close()
@@ -106,17 +116,21 @@ class Store:
                 """
                 INSERT INTO signals (
                     item_id, domain, competition, breakthrough, saturation,
-                    labels_json, entities_json, rationale, classified_at
+                    relevance, labels_json, segments_json, entities_json,
+                    rationale, classified_at
                 ) VALUES (
                     :item_id, :domain, :competition, :breakthrough, :saturation,
-                    :labels_json, :entities_json, :rationale, :classified_at
+                    :relevance, :labels_json, :segments_json, :entities_json,
+                    :rationale, :classified_at
                 )
                 ON CONFLICT(item_id) DO UPDATE SET
                     domain=excluded.domain,
                     competition=excluded.competition,
                     breakthrough=excluded.breakthrough,
                     saturation=excluded.saturation,
+                    relevance=excluded.relevance,
                     labels_json=excluded.labels_json,
+                    segments_json=excluded.segments_json,
                     entities_json=excluded.entities_json,
                     rationale=excluded.rationale,
                     classified_at=excluded.classified_at
@@ -148,10 +162,12 @@ class Store:
         rows = self._conn.execute(
             """
             SELECT c.*, s.domain, s.competition, s.breakthrough, s.saturation,
-                   s.labels_json, s.entities_json, s.rationale
+                   s.relevance, s.labels_json, s.segments_json, s.entities_json,
+                   s.rationale
             FROM chatter c
             LEFT JOIN signals s ON s.item_id = c.id
             ORDER BY
+                COALESCE(s.relevance, 0) DESC,
                 COALESCE(s.competition, 0) + COALESCE(s.breakthrough, 0)
                 + COALESCE(s.saturation, 0) DESC,
                 c.collected_at DESC
@@ -161,6 +177,7 @@ class Store:
         for row in rows:
             data = dict(row)
             data["labels"] = json.loads(data.pop("labels_json") or "[]")
+            data["segments"] = json.loads(data.pop("segments_json") or "[]")
             data["entities"] = json.loads(data.pop("entities_json") or "[]")
             extra = data.pop("extra_json")
             data["extra"] = json.loads(extra) if extra else {}

@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "scrapertc"
 version = "0.1.0"
-description = "Two-gate tissue culture chatter pickup: collect everywhere, then score competition, breakthroughs, and saturation."
+description = "Chatter pickup for cannabis tissue culture, TC companies, and genomic predictive breeding."
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [{ name = "Matt Meringolo" }]

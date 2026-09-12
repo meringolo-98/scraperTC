@@ -5,7 +5,7 @@ from typing import Any
 from scrapertc.collectors import collector_conf, enabled, item
 from scrapertc.http import Http
 from scrapertc.models import ChatterItem
-from scrapertc.settings import Settings, search_queries
+from scrapertc.settings import Settings, arxiv_queries, scholarly_queries, search_queries
 
 
 def collect_openalex(http: Http, settings: Settings, limit: int) -> list[ChatterItem]:
@@ -13,7 +13,7 @@ def collect_openalex(http: Http, settings: Settings, limit: int) -> list[Chatter
         return []
     items: list[ChatterItem] = []
     headers = {"User-Agent": settings.user_agent}
-    for query in search_queries()[:3]:
+    for query in search_queries()[:6]:
         data = http.get_json(
             "https://api.openalex.org/works",
             params={
@@ -80,54 +80,55 @@ def _openalex_abstract(inverted: dict[str, list[int]] | None) -> str:
 def collect_pubmed(http: Http, settings: Settings, limit: int) -> list[ChatterItem]:
     if not enabled("pubmed"):
         return []
-    term = '("tissue culture"[Title/Abstract] AND (plant OR micropropagation OR meristem))'
-    search = http.get_json(
-        "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi",
-        params={
-            "db": "pubmed",
-            "term": term,
-            "retmax": min(limit, 50),
-            "retmode": "json",
-            "sort": "pub+date",
-            "email": settings.contact_email,
-        },
-    )
-    if not isinstance(search, dict):
-        return []
-    ids = ((search.get("esearchresult") or {}).get("idlist")) or []
-    if not ids:
-        return []
-    summary = http.get_json(
-        "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi",
-        params={
-            "db": "pubmed",
-            "id": ",".join(ids),
-            "retmode": "json",
-            "email": settings.contact_email,
-        },
-    )
-    if not isinstance(summary, dict):
-        return []
-    result = summary.get("result") or {}
     items: list[ChatterItem] = []
-    for pmid in ids:
-        row = result.get(pmid) or {}
-        title = row.get("title") or ""
-        if not title:
-            continue
-        items.append(
-            item(
-                source="pubmed",
-                url=f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/",
-                title=title,
-                body=row.get("source") or "",
-                author=_first_author(row),
-                published_at=row.get("pubdate") or row.get("sortpubdate"),
-                query="pubmed-plant-tc",
-                extra={"pmid": pmid, "journal": row.get("fulljournalname")},
-            )
+    per_query = max(5, min(limit, 25))
+    for term in scholarly_queries()[:3]:
+        search = http.get_json(
+            "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi",
+            params={
+                "db": "pubmed",
+                "term": term,
+                "retmax": per_query,
+                "retmode": "json",
+                "sort": "pub+date",
+                "email": settings.contact_email,
+            },
         )
-    return items
+        if not isinstance(search, dict):
+            continue
+        ids = ((search.get("esearchresult") or {}).get("idlist")) or []
+        if not ids:
+            continue
+        summary = http.get_json(
+            "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi",
+            params={
+                "db": "pubmed",
+                "id": ",".join(ids),
+                "retmode": "json",
+                "email": settings.contact_email,
+            },
+        )
+        if not isinstance(summary, dict):
+            continue
+        result = summary.get("result") or {}
+        for pmid in ids:
+            row = result.get(pmid) or {}
+            title = row.get("title") or ""
+            if not title:
+                continue
+            items.append(
+                item(
+                    source="pubmed",
+                    url=f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/",
+                    title=title,
+                    body=row.get("source") or "",
+                    author=_first_author(row),
+                    published_at=row.get("pubdate") or row.get("sortpubdate"),
+                    query=term,
+                    extra={"pmid": pmid, "journal": row.get("fulljournalname")},
+                )
+            )
+    return _dedupe(items)
 
 
 def _first_author(row: dict[str, Any]) -> str | None:
@@ -141,35 +142,37 @@ def collect_arxiv(http: Http, settings: Settings, limit: int) -> list[ChatterIte
     if not enabled("arxiv"):
         return []
     del settings
-    text = http.get_text(
-        "https://export.arxiv.org/api/query",
-        params={
-            "search_query": 'all:"tissue culture" AND (plant OR micropropagation)',
-            "start": 0,
-            "max_results": min(limit, 40),
-            "sortBy": "submittedDate",
-            "sortOrder": "descending",
-        },
-    )
-    if not text:
-        return []
+    items: list[ChatterItem] = []
     import feedparser
 
-    parsed = feedparser.parse(text)
-    items: list[ChatterItem] = []
-    for entry in parsed.entries:
-        items.append(
-            item(
-                source="arxiv",
-                url=getattr(entry, "link", "") or "",
-                title=getattr(entry, "title", "") or "",
-                body=getattr(entry, "summary", "") or "",
-                author=getattr(entry, "author", None),
-                published_at=getattr(entry, "published", None),
-                query="arxiv-plant-tc",
-            )
+    per_query = max(5, min(limit, 25))
+    for query in arxiv_queries()[:3]:
+        text = http.get_text(
+            "https://export.arxiv.org/api/query",
+            params={
+                "search_query": query,
+                "start": 0,
+                "max_results": per_query,
+                "sortBy": "submittedDate",
+                "sortOrder": "descending",
+            },
         )
-    return items
+        if not text:
+            continue
+        parsed = feedparser.parse(text)
+        for entry in parsed.entries:
+            items.append(
+                item(
+                    source="arxiv",
+                    url=getattr(entry, "link", "") or "",
+                    title=getattr(entry, "title", "") or "",
+                    body=getattr(entry, "summary", "") or "",
+                    author=getattr(entry, "author", None),
+                    published_at=getattr(entry, "published", None),
+                    query=query,
+                )
+            )
+    return _dedupe(items)
 
 
 def collect_stackexchange(http: Http, settings: Settings, limit: int) -> list[ChatterItem]:
@@ -181,7 +184,7 @@ def collect_stackexchange(http: Http, settings: Settings, limit: int) -> list[Ch
         data = http.get_json(
             "https://api.stackexchange.com/2.3/search/advanced",
             params={
-                "q": "tissue culture",
+                "q": str(collector_conf("stackexchange").get("query") or "cannabis tissue culture"),
                 "site": site,
                 "pagesize": min(limit, 30),
                 "sort": "creation",

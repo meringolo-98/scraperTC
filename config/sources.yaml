@@ -5,24 +5,27 @@ default_limit: 40
 collectors:
   reddit:
     enabled: true
+    search_query: "cannabis tissue culture OR meristem OR HLVd OR viroid OR genomic selection OR micropropagation"
     subreddits:
       - tissuecultureplants
       - TCLabs
-      - horticulture
-      - botany
-      - IndoorGarden
-      - labrats
-      - biotechnology
-      - PlantedTank
+    search_subreddits:
+      - cannabis
+      - microgrowery
+      - MacroGrowery
+      - industrialhemp
+      - cannabiscultivation
   news:
     enabled: true
   rss:
     enabled: true
     feeds:
-      - name: google-news-plant-tc
-        url: "https://news.google.com/rss/search?q=%22plant+tissue+culture%22+OR+micropropagation&hl=en-US&gl=US&ceid=US:en"
-      - name: google-news-tissue-culture
-        url: "https://news.google.com/rss/search?q=%22tissue+culture%22+lab+OR+micropropagation&hl=en-US&gl=US&ceid=US:en"
+      - name: google-news-cannabis-tc
+        url: "https://news.google.com/rss/search?q=%22cannabis+tissue+culture%22+OR+%22cannabis+meristem%22+OR+HLVd+OR+%22hop+latent+viroid%22&hl=en-US&gl=US&ceid=US:en"
+      - name: google-news-cannabis-genomics
+        url: "https://news.google.com/rss/search?q=%22cannabis+genomic%22+OR+%22genomic+selection%22+cannabis+OR+%22predictive+breeding%22+cannabis&hl=en-US&gl=US&ceid=US:en"
+      - name: google-news-tc-labs
+        url: "https://news.google.com/rss/search?q=%22tissue+culture+lab%22+OR+micropropagation+cannabis+OR+%22plant+tissue+culture%22+company&hl=en-US&gl=US&ceid=US:en"
   youtube:
     enabled: true
     channel_ids: []
@@ -40,10 +43,11 @@ collectors:
     enabled: true
   stackexchange:
     enabled: true
+    query: "cannabis tissue culture OR genomic selection"
     sites:
       - biology
-      - gardening
       - bioinformatics
+      - gardening
   google_cse:
     enabled: true
   inbox:

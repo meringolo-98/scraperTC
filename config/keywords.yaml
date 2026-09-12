@@ -1,37 +1,65 @@
-# Tissue culture chatter queries.
-# Gate 1 searches these. Keep phrases specific enough to avoid
-# generic "culture" noise; Gate 2 still filters mammalian vs plant.
+# Gate 1 search budget. Order matters: collectors hit these first.
+# Target: cannabis TC / remediation lab + genomic prediction for breeders.
+priority:
+  - "cannabis tissue culture"
+  - "cannabis meristem"
+  - "hop latent viroid"
+  - "cannabis genomic selection"
+  - "cannabis micropropagation"
+  - "predictive breeding cannabis"
 
-core:
-  - "tissue culture"
+# Extra phrases Gate 2 uses for domain / relevance. Not all are searched live.
+cannabis_tc:
+  - "cannabis tissue culture"
+  - "marijuana tissue culture"
+  - "hemp tissue culture"
+  - "cannabis meristem"
+  - "cannabis micropropagation"
+  - "HLVd"
+  - "hop latent viroid"
+  - "viroid remediation"
+  - "virus-free cannabis"
+  - "clean stock cannabis"
+  - "cannabis clone tissue culture"
+
+genomic_breeding:
+  - "cannabis genomic selection"
+  - "cannabis genomic prediction"
+  - "predictive breeding cannabis"
+  - "cannabis GWAS"
+  - "marker-assisted cannabis"
+  - "cannabis SNP"
+  - "chemotype prediction"
+  - "breeding index cannabis"
+
+cannabis_tech:
+  - "cannabis CRISPR"
+  - "cannabis genome"
+  - "cannabis phenotyping"
+  - "cannabis automation tissue culture"
+  - "cannabis pathogen diagnostics"
+
+tc_companies:
+  - "tissue culture lab"
   - "plant tissue culture"
   - micropropagation
-  - "in vitro propagation"
-  - mericlone
-  - "TC plants"
-  - "tissue cultured"
-
-plant:
-  - "MS medium"
-  - "Murashige and Skoog"
-  - explant
-  - "somatic embryogenesis"
   - "meristem culture"
-  - "plant cloning lab"
-  - "banana tissue culture"
-  - "orchid flask"
   - "temporary immersion bioreactor"
-  - "PPM plant preservative"
-  - "kitchen tissue culture"
 
 mammalian:
-  - "cell culture"
-  - "tissue-engineered"
+  - "mammalian cell culture"
   - organoid
   - "iPSC"
-  - "mammalian cell culture"
 
-# Extra Google / CSE site scopes used when GOOGLE_CSE_ID is set.
+scholarly:
+  - '(cannabis OR hemp OR "Cannabis sativa") AND (tissue culture OR micropropagation OR meristem OR "hop latent" OR viroid)'
+  - '(cannabis OR hemp OR "Cannabis sativa") AND ("genomic selection" OR "genomic prediction" OR GWAS OR "marker-assisted")'
+  - '(cannabis OR hemp) AND (CRISPR OR phenotyping OR "whole genome")'
+
+arxiv:
+  - 'all:"cannabis" AND (all:"tissue culture" OR all:meristem OR all:"genomic selection")'
+  - 'all:"Cannabis sativa" AND (all:micropropagation OR all:GWAS)'
+
 web_scopes:
   - ""
   - "site:linkedin.com"
@@ -41,4 +69,3 @@ web_scopes:
   - "site:researchgate.net"
   - "site:patents.google.com"
   - "site:edu"
-  - "site:gov"

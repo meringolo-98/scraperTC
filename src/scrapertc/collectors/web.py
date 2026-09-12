@@ -161,7 +161,7 @@ def collect_youtube(http: Http, settings: Settings, limit: int) -> list[ChatterI
             )
     if not settings.youtube_api_key:
         return _dedupe(items)
-    for query in search_queries()[:3]:
+    for query in search_queries()[:6]:
         data = http.get_json(
             "https://www.googleapis.com/youtube/v3/search",
             params={

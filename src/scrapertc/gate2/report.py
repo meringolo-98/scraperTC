@@ -39,31 +39,38 @@ def _totals(rows: list[dict[str, Any]]) -> dict[str, Any]:
     labels = Counter()
     sources = Counter()
     domains = Counter()
+    segments = Counter()
     for row in rows:
         sources[row.get("source") or "unknown"] += 1
         domains[row.get("domain") or "unclassified"] += 1
         for label in row.get("labels") or []:
             labels[label] += 1
+        for segment in row.get("segments") or []:
+            segments[segment] += 1
     return {
         "items": len(rows),
         "labels": dict(labels),
         "sources": dict(sources),
         "domains": dict(domains),
+        "segments": dict(segments),
     }
 
 
 def render_markdown(rows: list[dict[str, Any]]) -> str:
     totals = _totals(rows)
     lines = [
-        "# Tissue culture chatter",
+        "# Cannabis TC / genomics chatter",
         "",
         f"Generated {datetime.now(UTC).strftime('%Y-%m-%d %H:%M UTC')}.",
+        "",
+        "Focus: cannabis tissue culture and remediation, TC companies, genomic predictive breeding, high-level cannabis tech.",
         "",
         "## Intake (Gate 1)",
         "",
         f"- **{totals['items']}** unique items",
         f"- Sources: {_fmt_counts(totals['sources'])}",
         f"- Domains: {_fmt_counts(totals['domains'])}",
+        f"- Segments: {_fmt_counts(totals.get('segments') or {}) or 'none'}",
         "",
         "## Gate 2 scores",
         "",
@@ -79,9 +86,10 @@ def render_markdown(rows: list[dict[str, Any]]) -> str:
     leftover = [
         row
         for row in rows
-        if not set(row.get("labels") or []) & {"competition", "breakthrough", "saturation"}
+        if "relevant" in (row.get("labels") or [])
+        and not set(row.get("labels") or []) & {"competition", "breakthrough", "saturation"}
     ]
-    lines.extend(_section("Unscored / watch list", leftover, None, cap=15))
+    lines.extend(_section("Also relevant", leftover, None, cap=20))
     return "\n".join(lines).rstrip() + "\n"
 
 
@@ -107,13 +115,19 @@ def _section(
         source = row.get("source") or "?"
         domain = row.get("domain") or "?"
         entities = ", ".join(row.get("entities") or [])
+        segments = ", ".join(row.get("segments") or [])
         score = ""
         if label:
             score = f" · {label} {float(row.get(label) or 0):.2f}"
+        rel = row.get("relevance")
+        if rel is not None and label is None:
+            score = f" · relevance {float(rel):.2f}"
         lines.append(f"- **[{title}]({url})** ({source}, {domain}{score})")
         body = (row.get("body") or "").strip()
         if body:
             lines.append(f"  {body[:280]}{'…' if len(body) > 280 else ''}")
+        if segments:
+            lines.append(f"  Segments: {segments}")
         if entities:
             lines.append(f"  Entities: {entities}")
         lines.append("")
@@ -133,13 +147,14 @@ def render_html(rows: list[dict[str, Any]]) -> str:
         ("Competition", "competition"),
         ("Breakthroughs", "breakthrough"),
         ("Saturation", "saturation"),
+        ("Also relevant", "relevant"),
     ):
         sections.append(_html_section(heading, rows, label))
     return f"""<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
-  <title>Tissue culture chatter</title>
+  <title>Cannabis TC / genomics chatter</title>
   <style>
     :root {{ color-scheme: dark; }}
     body {{ font-family: ui-sans-serif, system-ui, sans-serif; margin: 0; background: #101218; color: #e8eaed; }}
@@ -156,8 +171,8 @@ def render_html(rows: list[dict[str, Any]]) -> str:
 </head>
 <body>
 <main>
-  <h1>Tissue culture chatter</h1>
-  <p class="meta">Gate 1 intake · Gate 2 competition / breakthrough / saturation</p>
+  <h1>Cannabis TC / genomics chatter</h1>
+  <p class="meta">TC lab + genetic prediction for breeders · Gate 2 competition / breakthrough / saturation</p>
   <p class="chips">{_chips(totals)}</p>
   {"".join(sections)}
 </main>
@@ -169,6 +184,8 @@ def render_html(rows: list[dict[str, Any]]) -> str:
 def _chips(totals: dict[str, Any]) -> str:
     bits = [f"<span>{totals['items']} items</span>"]
     for key, value in (totals.get("labels") or {}).items():
+        bits.append(f"<span>{html.escape(str(key))} {value}</span>")
+    for key, value in (totals.get("segments") or {}).items():
         bits.append(f"<span>{html.escape(str(key))} {value}</span>")
     return "".join(bits)
 
@@ -184,7 +201,10 @@ def _html_section(heading: str, rows: list[dict[str, Any]], label: str) -> str:
         source = html.escape(str(row.get("source") or ""))
         score = float(row.get(label) or 0)
         entities = html.escape(", ".join(row.get("entities") or []))
-        entity_html = f'<p class="meta">{entities}</p>' if entities else ""
+        segments = html.escape(", ".join(row.get("segments") or []))
+        entity_html = f'<p class="meta">{segments}{" · " if segments and entities else ""}{entities}</p>'
+        if not segments and not entities:
+            entity_html = ""
         cards.append(
             f'<article><div class="src">{source} · {label} {score:.2f}</div>'
             f'<h3><a href="{url}">{title}</a></h3>'

@@ -85,19 +85,43 @@ def search_queries() -> list[str]:
     keywords = load_yaml("keywords.yaml")
     seen: set[str] = set()
     ordered: list[str] = []
-    for group in ("core", "plant"):
+    groups = ("priority", "core", "cannabis_tc", "genomic_breeding", "plant")
+    for group in groups:
         for term in keywords.get(group) or []:
             text = str(term).strip()
             if text and text not in seen:
                 seen.add(text)
                 ordered.append(text)
-    return ordered or ["tissue culture"]
+        if group == "priority" and ordered:
+            return ordered
+    return ordered or ["cannabis tissue culture"]
+
+
+def scholarly_queries() -> list[str]:
+    keywords = load_yaml("keywords.yaml")
+    terms = [str(t).strip() for t in (keywords.get("scholarly") or []) if str(t).strip()]
+    return terms or search_queries()[:3]
+
+
+def arxiv_queries() -> list[str]:
+    keywords = load_yaml("keywords.yaml")
+    terms = [str(t).strip() for t in (keywords.get("arxiv") or []) if str(t).strip()]
+    return terms or [
+        'all:"cannabis" AND (all:"tissue culture" OR all:"genomic selection")',
+    ]
 
 
 def all_keyword_terms() -> list[str]:
     keywords = load_yaml("keywords.yaml")
     terms: list[str] = []
-    for group in ("core", "plant", "mammalian"):
+    for group in (
+        "priority",
+        "cannabis_tc",
+        "genomic_breeding",
+        "cannabis_tech",
+        "tc_companies",
+        "mammalian",
+    ):
         terms.extend(str(t) for t in (keywords.get(group) or []))
     return terms
 

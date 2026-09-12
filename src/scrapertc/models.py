@@ -76,7 +76,9 @@ class Signal(BaseModel):
     competition: float = 0.0
     breakthrough: float = 0.0
     saturation: float = 0.0
+    relevance: float = 0.0
     labels: list[str] = Field(default_factory=list)
+    segments: list[str] = Field(default_factory=list)
     entities: list[str] = Field(default_factory=list)
     rationale: str = ""
     classified_at: datetime = Field(default_factory=utcnow)
@@ -88,7 +90,9 @@ class Signal(BaseModel):
             "competition": self.competition,
             "breakthrough": self.breakthrough,
             "saturation": self.saturation,
+            "relevance": self.relevance,
             "labels_json": json.dumps(self.labels),
+            "segments_json": json.dumps(self.segments),
             "entities_json": json.dumps(self.entities),
             "rationale": self.rationale,
             "classified_at": self.classified_at.isoformat(),

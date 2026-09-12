@@ -36,6 +36,7 @@ def test_pipeline_demo(tmp_path, settings) -> None:
     assert "Competition" in markdown
     assert "Breakthroughs" in markdown
     assert "Saturation" in markdown
+    assert "Cannabis TC" in markdown
     assert paths["html"].endswith(".html")
 
 

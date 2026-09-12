@@ -1,42 +1,51 @@
-# Known names Gate 2 treats as competition / vendor / lab signals.
-# Add brands, nurseries, media houses, and labs as they surface.
+# Names Gate 2 treats as competition / vendor / lab / platform signals.
+# Cannabis TC + remediation, plant TC companies, genomic/breeding tech.
 
 companies:
+  # Cannabis TC / clean stock / meristem
+  - Segra International
+  - Dark Heart Nursery
+  - Front Range Biosciences
+  - Concept Genetic
+  - Sunrise Genetics
+  - Microclone
+  - Phylos Bioscience
+  # Pathogen / remediation-adjacent diagnostics
+  - TUMI Genomics
+  - Medicinal Genomics
+  - PathogenDx
+  - Agdia
+  - LeafWorks
+  - Steep Hill
+  # Genomic prediction / breeding platforms
+  - New West Genetics
+  - CanBreed
+  - NRGene
+  - KeyGene
+  - Trait Biosciences
+  - Gencove
+  # Plant TC companies / automation / media (vendors and possible comps)
   - Plant Cell Technology
   - Phytotech
   - PhytoTech Labs
   - Duchefa
   - Caisson Labs
   - HiMedia
-  - Sigma-Aldrich
-  - Merck
-  - Sartorius
-  - Conviron
   - Kitchen Culture Kits
   - AgriForest
   - Oglesby Plants
-  - Segra International
-  - JRT Nurseries
   - Agromillora
   - Rancho Tissue Technologies
   - Xplant
   - NuPlant
   - Deroose Plants
   - Phytelligence
-  - Lowes TC
-  - Valley Tissue Culture
-  - Hartmann's Plant
-  - Knight Hollow
-  - Mountain Shadow Nursery
-  - TC Propagation
-  - In Vitro Microplants
-  - Phytocultures
-  - Highveld Biotech
-  - AL-Rajhi Tissue Culture
-  - Al Wathba Marionnet
+  - Sartorius
+  - Conviron
 
 aliases:
   PCT: Plant Cell Technology
   PPM: Plant Preservative Mixture
   TIB: temporary immersion bioreactor
   RITA: temporary immersion
+  HLVd: hop latent viroid

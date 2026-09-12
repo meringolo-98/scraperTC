@@ -16,19 +16,21 @@ def collect_reddit(http: Http, settings: Settings, limit: int) -> list[ChatterIt
     headers = {"Authorization": f"bearer {token}"} if token else None
     host = "https://oauth.reddit.com" if token else "https://www.reddit.com"
     items: list[ChatterItem] = []
-    queries = search_queries()[:4]
-    for query in queries:
+    reddit_q = str(conf.get("search_query") or "cannabis tissue culture OR meristem OR HLVd")
+    for query in search_queries()[:6]:
         data = http.get_json(
             f"{host}/search.json",
             params={"q": query, "sort": "new", "limit": min(limit, 100), "t": "month"},
             headers=headers,
         )
         items.extend(_reddit_children(data, query))
-    for sub in conf.get("subreddits") or []:
+    listing_subs = conf.get("subreddits") or []
+    search_subs = list(listing_subs) + list(conf.get("search_subreddits") or [])
+    for sub in search_subs:
         data = http.get_json(
             f"{host}/r/{sub}/search.json",
             params={
-                "q": "tissue culture OR micropropagation OR meristem",
+                "q": reddit_q,
                 "restrict_sr": "1",
                 "sort": "new",
                 "limit": min(limit, 100),
@@ -36,6 +38,7 @@ def collect_reddit(http: Http, settings: Settings, limit: int) -> list[ChatterIt
             headers=headers,
         )
         items.extend(_reddit_children(data, f"r/{sub}"))
+    for sub in listing_subs:
         listing = http.get_json(
             f"{host}/r/{sub}/new.json",
             params={"limit": min(limit, 50)},
@@ -101,7 +104,7 @@ def collect_hackernews(http: Http, settings: Settings, limit: int) -> list[Chatt
         return []
     del settings
     items: list[ChatterItem] = []
-    for query in search_queries()[:3]:
+    for query in search_queries()[:6]:
         data = http.get_json(
             "https://hn.algolia.com/api/v1/search",
             params={"query": query, "hitsPerPage": min(limit, 50), "tags": "story"},
@@ -133,7 +136,7 @@ def collect_bluesky(http: Http, settings: Settings, limit: int) -> list[ChatterI
         return []
     del settings
     items: list[ChatterItem] = []
-    for query in search_queries()[:3]:
+    for query in search_queries()[:6]:
         data = http.get_json(
             "https://public.api.bsky.app/xrpc/app.bsky.feed.searchPosts",
             params={"q": query, "limit": min(limit, 50)},

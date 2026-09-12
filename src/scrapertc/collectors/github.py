@@ -3,7 +3,7 @@ from __future__ import annotations
 from scrapertc.collectors import enabled, item
 from scrapertc.http import Http
 from scrapertc.models import ChatterItem
-from scrapertc.settings import Settings, search_queries
+from scrapertc.settings import Settings, live_queries
 
 
 def collect_github(http: Http, settings: Settings, limit: int) -> list[ChatterItem]:
@@ -13,7 +13,7 @@ def collect_github(http: Http, settings: Settings, limit: int) -> list[ChatterIt
     if settings.github_token:
         headers["Authorization"] = f"Bearer {settings.github_token}"
     items: list[ChatterItem] = []
-    for query in search_queries()[:2]:
+    for query in live_queries(priority_cap=2, broad_cap=4):
         repos = http.get_json(
             "https://api.github.com/search/repositories",
             params={"q": query, "sort": "updated", "per_page": min(limit, 30)},

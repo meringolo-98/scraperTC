@@ -31,11 +31,16 @@ def collect_cmd(
     demo: bool = typer.Option(
         False, "--demo", help="Load bundled sample chatter instead of the network."
     ),
+    broad: bool = typer.Option(
+        False,
+        "--broad",
+        help="Search every keyword group, not just the six priority queries.",
+    ),
 ) -> None:
     """Gate 1 — pick up tissue culture chatter from configured sources."""
     names = [part.strip() for part in only.split(",")] if only else None
     items = demo_items() if demo else None
-    _print_stats("Gate 1 collect", collect(only=names, limit=limit, items=items))
+    _print_stats("Gate 1 collect", collect(only=names, limit=limit, items=items, broad=broad))
 
 
 @app.command("refine")
@@ -60,11 +65,16 @@ def run_cmd(
         None, "--only", help="Comma-separated collectors for live intake."
     ),
     limit: int | None = typer.Option(None, "--limit"),
+    broad: bool = typer.Option(
+        False,
+        "--broad",
+        help="Wider Gate 1 search across all keyword groups. Gate 2 still filters.",
+    ),
 ) -> None:
     """Collect, refine, and report in one pass."""
     names = [part.strip() for part in only.split(",")] if only else None
     items = demo_items() if demo else None
-    _print_stats("Gate 1 collect", collect(only=names, limit=limit, items=items))
+    _print_stats("Gate 1 collect", collect(only=names, limit=limit, items=items, broad=broad))
     _print_stats("Gate 2 refine", refine())
     paths = report()
     console.print(f"Report: {paths['html']}")

@@ -7,7 +7,7 @@ import feedparser
 from scrapertc.collectors import collector_conf, enabled, item
 from scrapertc.http import Http
 from scrapertc.models import ChatterItem
-from scrapertc.settings import Settings, search_queries, web_scopes
+from scrapertc.settings import Settings, live_queries, web_scopes
 
 
 def collect_rss(http: Http, settings: Settings, limit: int) -> list[ChatterItem]:
@@ -51,7 +51,7 @@ def collect_google_cse(http: Http, settings: Settings, limit: int) -> list[Chatt
     if not (settings.google_api_key and settings.google_cse_id):
         return []
     items: list[ChatterItem] = []
-    queries = search_queries()[:4]
+    queries = live_queries(priority_cap=4, broad_cap=8)
     for query in queries:
         for scope in web_scopes():
             q = f"{query} {scope}".strip()
@@ -161,7 +161,7 @@ def collect_youtube(http: Http, settings: Settings, limit: int) -> list[ChatterI
             )
     if not settings.youtube_api_key:
         return _dedupe(items)
-    for query in search_queries()[:6]:
+    for query in live_queries():
         data = http.get_json(
             "https://www.googleapis.com/youtube/v3/search",
             params={

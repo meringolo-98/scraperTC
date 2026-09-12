@@ -16,7 +16,7 @@ from scrapertc.gate2 import classify
 from scrapertc.gate2.report import write_reports
 from scrapertc.http import Http
 from scrapertc.models import ChatterItem, utcnow
-from scrapertc.settings import Settings, get_settings, repo_root
+from scrapertc.settings import Settings, get_settings, repo_root, search_mode
 from scrapertc.store import Store
 
 CollectorMap = dict[str, Callable[..., list[ChatterItem]]]
@@ -49,6 +49,7 @@ def collect(
     settings: Settings | None = None,
     store: Store | None = None,
     items: list[ChatterItem] | None = None,
+    broad: bool = False,
 ) -> dict[str, int | str]:
     settings = settings or get_settings()
     store = store or open_store(settings)
@@ -59,27 +60,32 @@ def collect(
     gathered: list[ChatterItem] = list(items or [])
     errors: dict[str, str] = {}
     per_source: dict[str, int] = {}
+    token = search_mode.set("broad" if broad else "priority")
 
-    if items is None:
-        http = Http(settings)
-        try:
-            for name in selected:
-                if name not in COLLECTORS:
-                    continue
-                try:
-                    batch = COLLECTORS[name](http, settings, cap)
-                except Exception as exc:  # collectors must not kill the run
-                    errors[name] = str(exc)
-                    batch = []
-                per_source[name] = len(batch)
-                gathered.extend(batch)
-        finally:
-            http.close()
+    try:
+        if items is None:
+            http = Http(settings)
+            try:
+                for name in selected:
+                    if name not in COLLECTORS:
+                        continue
+                    try:
+                        batch = COLLECTORS[name](http, settings, cap)
+                    except Exception as exc:  # collectors must not kill the run
+                        errors[name] = str(exc)
+                        batch = []
+                    per_source[name] = len(batch)
+                    gathered.extend(batch)
+            finally:
+                http.close()
+    finally:
+        search_mode.reset(token)
 
     written = store.upsert_items(gathered)
     stats: dict[str, int | str] = {
         "collected": len(gathered),
         "upserted": written,
+        "search_mode": "broad" if broad else "priority",
         **{f"collector:{k}": v for k, v in per_source.items()},
     }
     if unknown:

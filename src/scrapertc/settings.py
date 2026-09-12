@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from contextvars import ContextVar
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -11,6 +12,9 @@ from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 load_dotenv()
+
+# "priority" = the tight cannabis-first budget. "broad" = all mission keyword groups.
+search_mode: ContextVar[str] = ContextVar("search_mode", default="priority")
 
 
 def repo_root() -> Path:
@@ -81,20 +85,39 @@ def get_settings() -> Settings:
     return settings
 
 
+def is_broad() -> bool:
+    return search_mode.get() == "broad"
+
+
 def search_queries() -> list[str]:
     keywords = load_yaml("keywords.yaml")
     seen: set[str] = set()
     ordered: list[str] = []
-    groups = ("priority", "core", "cannabis_tc", "genomic_breeding", "plant")
+    groups = ("priority",)
+    if is_broad():
+        groups = (
+            "priority",
+            "cannabis_tc",
+            "genomic_breeding",
+            "cannabis_tech",
+            "tc_companies",
+        )
     for group in groups:
         for term in keywords.get(group) or []:
             text = str(term).strip()
             if text and text not in seen:
                 seen.add(text)
                 ordered.append(text)
-        if group == "priority" and ordered:
-            return ordered
     return ordered or ["cannabis tissue culture"]
+
+
+def live_queries(priority_cap: int | None = None, broad_cap: int | None = None) -> list[str]:
+    """Search strings for a collector. Caps protect rate-limited APIs."""
+    queries = search_queries()
+    cap = broad_cap if is_broad() else priority_cap
+    if cap is None:
+        return queries
+    return queries[:cap]
 
 
 def scholarly_queries() -> list[str]:

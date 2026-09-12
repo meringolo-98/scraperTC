@@ -2,15 +2,34 @@ from __future__ import annotations
 
 from scrapertc.demo import demo_items
 from scrapertc.gate2 import classify
-from scrapertc.settings import search_queries
+from scrapertc.settings import is_broad, search_mode, search_queries
 
 
 def test_search_budget_is_cannabis_first() -> None:
-    queries = search_queries()
-    assert queries[0].lower().startswith("cannabis")
-    blob = " ".join(queries).lower()
-    assert "genomic" in blob
-    assert "hop latent" in blob or "hlvd" in blob
+    token = search_mode.set("priority")
+    try:
+        queries = search_queries()
+        assert queries[0].lower().startswith("cannabis")
+        blob = " ".join(queries).lower()
+        assert "genomic" in blob
+        assert "hop latent" in blob or "hlvd" in blob
+        assert "temporary immersion" not in blob
+        assert len(queries) == 6
+    finally:
+        search_mode.reset(token)
+
+
+def test_broad_search_adds_tc_and_tech_terms() -> None:
+    token = search_mode.set("broad")
+    try:
+        queries = search_queries()
+        blob = " ".join(queries).lower()
+        assert is_broad()
+        assert "tissue culture lab" in blob
+        assert "cannabis crispr" in blob
+        assert len(queries) > 6
+    finally:
+        search_mode.reset(token)
 
 
 def test_demo_items_cover_all_three_gates() -> None:

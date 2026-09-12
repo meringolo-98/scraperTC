@@ -27,11 +27,28 @@ Live intake:
 
 ```bash
 scrapertc collect --limit 20
+scrapertc collect --broad --limit 20   # every keyword group, Gate 2 still filters
 scrapertc refine
 scrapertc report
 ```
 
-Or one shot: `scrapertc run --limit 20`.
+Or one shot: `scrapertc run --limit 20` / `scrapertc run --broad --limit 20`.
+
+Default Gate 1 only fires the six `priority` queries in `config/keywords.yaml` (cannabis TC, meristem, HLVd, genomic selection, microprop, predictive breeding). `--broad` also searches the `cannabis_tc`, `genomic_breeding`, `cannabis_tech`, and `tc_companies` lists — more hits, more noise, Gate 2 sorts it.
+
+## API keys
+
+Nothing is required to run. PubMed, OpenAlex, arXiv, news RSS, HN, Bluesky, Stack Exchange, and inbox work with no keys. Copy `.env.example` to `.env` only for the sources below.
+
+| Key | Who | What it unlocks |
+| --- | --- | --- |
+| `YOUTUBE_API_KEY` | [Google Cloud](https://console.cloud.google.com/) → enable **YouTube Data API v3** | Live YouTube *search*. Channel RSS in `config/sources.yaml` works without it. |
+| `GOOGLE_API_KEY` + `GOOGLE_CSE_ID` | Cloud: **Custom Search API**. CSE id: [Programmable Search](https://programmablesearchengine.google.com/) (search the whole web, not just one site) | The “everywhere” net: LinkedIn posts, lab pages, patents, blogs via `site:` scopes. This is the one that actually widens Gate 1 across the open web. Free quota is tight (~100 queries/day). |
+| `REDDIT_CLIENT_ID` + `REDDIT_CLIENT_SECRET` | [Reddit apps](https://www.reddit.com/prefs/apps) (script type) | Use if public Reddit JSON starts returning 403. Optional. |
+| `GITHUB_TOKEN` | GitHub → Settings → Developer settings → PAT | Higher search rate limits. Optional. |
+| `CONTACT_EMAIL` | Your email | Not a secret. Shown in User-Agent for NCBI / OpenAlex politeness. |
+
+`scrapertc status` shows which collectors are waiting on keys.
 
 ## What Gate 2 is looking for
 

@@ -5,7 +5,7 @@ from typing import Any
 from scrapertc.collectors import collector_conf, enabled, item
 from scrapertc.http import Http
 from scrapertc.models import ChatterItem
-from scrapertc.settings import Settings, search_queries
+from scrapertc.settings import Settings, live_queries
 
 
 def collect_reddit(http: Http, settings: Settings, limit: int) -> list[ChatterItem]:
@@ -17,7 +17,7 @@ def collect_reddit(http: Http, settings: Settings, limit: int) -> list[ChatterIt
     host = "https://oauth.reddit.com" if token else "https://www.reddit.com"
     items: list[ChatterItem] = []
     reddit_q = str(conf.get("search_query") or "cannabis tissue culture OR meristem OR HLVd")
-    for query in search_queries()[:6]:
+    for query in live_queries():
         data = http.get_json(
             f"{host}/search.json",
             params={"q": query, "sort": "new", "limit": min(limit, 100), "t": "month"},
@@ -104,7 +104,7 @@ def collect_hackernews(http: Http, settings: Settings, limit: int) -> list[Chatt
         return []
     del settings
     items: list[ChatterItem] = []
-    for query in search_queries()[:6]:
+    for query in live_queries():
         data = http.get_json(
             "https://hn.algolia.com/api/v1/search",
             params={"query": query, "hitsPerPage": min(limit, 50), "tags": "story"},
@@ -136,7 +136,7 @@ def collect_bluesky(http: Http, settings: Settings, limit: int) -> list[ChatterI
         return []
     del settings
     items: list[ChatterItem] = []
-    for query in search_queries()[:6]:
+    for query in live_queries():
         data = http.get_json(
             "https://public.api.bsky.app/xrpc/app.bsky.feed.searchPosts",
             params={"q": query, "limit": min(limit, 50)},

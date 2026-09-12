@@ -5,7 +5,7 @@ from typing import Any
 from scrapertc.collectors import collector_conf, enabled, item
 from scrapertc.http import Http
 from scrapertc.models import ChatterItem
-from scrapertc.settings import Settings, arxiv_queries, scholarly_queries, search_queries
+from scrapertc.settings import Settings, arxiv_queries, live_queries, scholarly_queries
 
 
 def collect_openalex(http: Http, settings: Settings, limit: int) -> list[ChatterItem]:
@@ -13,7 +13,7 @@ def collect_openalex(http: Http, settings: Settings, limit: int) -> list[Chatter
         return []
     items: list[ChatterItem] = []
     headers = {"User-Agent": settings.user_agent}
-    for query in search_queries()[:6]:
+    for query in live_queries():
         data = http.get_json(
             "https://api.openalex.org/works",
             params={

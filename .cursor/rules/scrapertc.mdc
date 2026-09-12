@@ -7,7 +7,7 @@ alwaysApply: true
 
 Competitive-intel intake for a cannabis tissue culture / remediation lab **and** a genomic prediction company that sells to breeders.
 
-- **Gate 1** collects public chatter: cannabis TC, meristem/HLVd remediation, any tissue culture companies, genomic predictive breeding, and high-level cannabis tech.
+- **Gate 1** default is the six `priority` queries. `--broad` also searches TC companies, genomics, and cannabis tech lists. Gate 2 still filters.
 - **Gate 2** scores **competition**, **breakthroughs**, **saturation**, plus **relevance** and segments (`cannabis_tc`, `remediation`, `tc_company`, `genomic_prediction`, `cannabis_tech`).
 - Keep orchid/banana hobby noise low-relevance. Keep mammalian cell culture off-domain.
 - Prefer official / public APIs. No login scrapers or unofficial LinkedIn/Meta/X HTML harvest.

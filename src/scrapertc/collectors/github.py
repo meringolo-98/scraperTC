@@ -13,7 +13,7 @@ def collect_github(http: Http, settings: Settings, limit: int) -> list[ChatterIt
     if settings.github_token:
         headers["Authorization"] = f"Bearer {settings.github_token}"
     items: list[ChatterItem] = []
-    for query in live_queries(priority_cap=2, broad_cap=4):
+    for query in live_queries(priority_cap=4, broad_cap=8):
         repos = http.get_json(
             "https://api.github.com/search/repositories",
             params={"q": query, "sort": "updated", "per_page": min(limit, 30)},

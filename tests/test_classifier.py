@@ -13,8 +13,24 @@ def test_search_budget_is_cannabis_first() -> None:
         blob = " ".join(queries).lower()
         assert "genomic" in blob
         assert "hop latent" in blob or "hlvd" in blob
-        assert "temporary immersion" not in blob
-        assert len(queries) == 6
+        assert "segra" in blob
+        assert "flasking cannabis" in blob
+        assert "temporary immersion bioreactor" not in blob
+        assert len(queries) > 20
+    finally:
+        search_mode.reset(token)
+
+
+def test_live_queries_mix_in_competitors() -> None:
+    from scrapertc.settings import live_queries
+
+    token = search_mode.set("priority")
+    try:
+        queries = live_queries(priority_cap=20, broad_cap=36)
+        blob = " ".join(queries).lower()
+        assert "cannabis tissue culture" in blob
+        assert "segra" in blob
+        assert len(queries) == 20
     finally:
         search_mode.reset(token)
 
@@ -101,6 +117,21 @@ def test_cannabis_tech_breakthrough() -> None:
     assert "cannabis_tech" in signal.segments or "genomic_prediction" in signal.segments
     assert "breakthrough" in signal.labels
     assert "Medicinal Genomics" in signal.entities
+
+
+def test_named_competitor_mention_is_a_lead() -> None:
+    from scrapertc.collectors import item as make_item
+
+    row = make_item(
+        source="linkedin",
+        url="https://www.linkedin.com/posts/segra-lab",
+        title="Segra International is hiring a meristem tech",
+        body="Join our facility in BC.",
+    )
+    signal = classify(row)
+    assert "Segra International" in signal.entities
+    assert "competition" in signal.labels
+    assert signal.relevance >= 0.4
 
 
 def test_generic_crop_microprop_is_not_cannabis() -> None:

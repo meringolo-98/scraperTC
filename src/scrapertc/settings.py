@@ -91,41 +91,64 @@ def is_broad() -> bool:
     return search_mode.get() == "broad"
 
 
-def search_queries() -> list[str]:
-    keywords = load_yaml("keywords.yaml")
+def _dedupe_terms(*groups: list[str]) -> list[str]:
     seen: set[str] = set()
     ordered: list[str] = []
-    groups = ("priority",)
-    if is_broad():
-        groups = (
-            "priority",
-            "cannabis_tc",
-            "genomic_breeding",
-            "cannabis_tech",
-            "tc_companies",
-        )
     for group in groups:
-        for term in keywords.get(group) or []:
+        for term in group:
             text = str(term).strip()
             if text and text not in seen:
                 seen.add(text)
                 ordered.append(text)
-    return ordered or ["cannabis tissue culture"]
+    return ordered
+
+
+def mention_queries() -> list[str]:
+    """How people talk about the space. Default net; --broad adds generic plant TC."""
+    keywords = load_yaml("keywords.yaml")
+    groups = ["priority", "cannabis_tc", "genomic_breeding", "cannabis_tech"]
+    if is_broad():
+        groups.append("tc_companies")
+    buckets = [[str(t) for t in (keywords.get(group) or [])] for group in groups]
+    return _dedupe_terms(*buckets) or ["cannabis tissue culture"]
+
+
+def player_queries() -> list[str]:
+    """Named labs / vendors / platforms from competitors.yaml — always searched."""
+    names = competitors_config().get("companies") or []
+    return _dedupe_terms([str(n) for n in names])
+
+
+def search_queries() -> list[str]:
+    """Full Gate 1 query list: mentions first, then competitor names."""
+    return _dedupe_terms(mention_queries(), player_queries())
 
 
 def live_queries(priority_cap: int | None = None, broad_cap: int | None = None) -> list[str]:
-    """Search strings for a collector. Caps protect rate-limited APIs."""
-    queries = search_queries()
+    """Search strings for a collector. Caps protect rate-limited APIs.
+
+    Mentions stay first. A slice of named competitors is always mixed in so
+    Gate 1 is not only technique keywords.
+    """
+    mentions = mention_queries()
+    players = player_queries()
     cap = broad_cap if is_broad() else priority_cap
     if cap is None:
-        return queries
-    return queries[:cap]
+        return _dedupe_terms(mentions, players)
+    player_n = min(len(players), cap // 3)
+    mention_n = max(0, cap - player_n)
+    return _dedupe_terms(mentions[:mention_n], players[:player_n])
 
 
 def scholarly_queries() -> list[str]:
     keywords = load_yaml("keywords.yaml")
     terms = [str(t).strip() for t in (keywords.get("scholarly") or []) if str(t).strip()]
     return terms or search_queries()[:3]
+
+
+def literature_queries() -> list[str]:
+    """Boolean literature searches — this scrape exists to find the research."""
+    return scholarly_queries() or live_queries(priority_cap=6, broad_cap=10)
 
 
 def arxiv_queries() -> list[str]:

@@ -40,7 +40,7 @@ def collect_cmd(
     broad: bool = typer.Option(
         False,
         "--broad",
-        help="Search every keyword group, not just the six priority queries.",
+        help="Also search generic plant-TC phrases (noisier). Gate 2 still filters.",
     ),
 ) -> None:
     """Gate 1 — scrape configured sources into SQLite. No LLM."""
@@ -74,7 +74,7 @@ def run_cmd(
     broad: bool = typer.Option(
         False,
         "--broad",
-        help="Wider Gate 1 search across all keyword groups. Gate 2 still filters.",
+        help="Also search generic plant-TC phrases (noisier). Gate 2 still filters.",
     ),
 ) -> None:
     """Collect, refine, and report in one pass."""

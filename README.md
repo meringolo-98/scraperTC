@@ -37,7 +37,7 @@ scrapertc export --out data/export.jsonl
 
 `collect` prints **new** vs **updated**. Same URL seen again increments `hit_count` and `last_seen`; `first_seen` stays put.
 
-Default Gate 1 only fires the six `priority` queries in `config/keywords.yaml`. `--broad` also searches `cannabis_tc`, `genomic_breeding`, `cannabis_tech`, and `tc_companies`.
+Default Gate 1 searches mention phrases (`cannabis_tc`, genomic breeding, cannabis tech) **and** every company in `config/competitors.yaml`. `--broad` also adds generic plant-TC terms (noisier orchids/bananas). Gate 2 keeps the leads.
 
 ## Why this beats an LLM browser
 

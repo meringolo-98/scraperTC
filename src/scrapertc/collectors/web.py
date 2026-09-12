@@ -7,7 +7,14 @@ import feedparser
 from scrapertc.collectors import collector_conf, enabled, item
 from scrapertc.http import Http
 from scrapertc.models import ChatterItem
-from scrapertc.settings import Settings, live_queries, web_scopes
+from scrapertc.settings import (
+    Settings,
+    is_broad,
+    live_queries,
+    mention_queries,
+    player_queries,
+    web_scopes,
+)
 
 
 def collect_rss(http: Http, settings: Settings, limit: int) -> list[ChatterItem]:
@@ -51,7 +58,7 @@ def collect_google_cse(http: Http, settings: Settings, limit: int) -> list[Chatt
     if not (settings.google_api_key and settings.google_cse_id):
         return []
     items: list[ChatterItem] = []
-    queries = live_queries(priority_cap=4, broad_cap=8)
+    queries = live_queries(priority_cap=12, broad_cap=20)
     for query in queries:
         for scope in web_scopes():
             q = f"{query} {scope}".strip()
@@ -161,7 +168,7 @@ def collect_youtube(http: Http, settings: Settings, limit: int) -> list[ChatterI
             )
     if not settings.youtube_api_key:
         return _dedupe(items)
-    for query in live_queries():
+    for query in live_queries(priority_cap=12, broad_cap=20):
         data = http.get_json(
             "https://www.googleapis.com/youtube/v3/search",
             params={
@@ -206,43 +213,72 @@ def collect_brave(http: Http, settings: Settings, limit: int) -> list[ChatterIte
         "Accept": "application/json",
         "X-Subscription-Token": settings.brave_api_key,
     }
-    queries = live_queries(priority_cap=6, broad_cap=10)
-    for query in queries:
-        for scope in web_scopes():
-            q = f"{query} {scope}".strip()
-            offsets = [0, 1] if not scope else [0]
-            for offset in offsets:
-                data = http.get_json(
-                    "https://api.search.brave.com/res/v1/web/search",
-                    params={
-                        "q": q,
-                        "count": min(20, max(limit, 10)),
-                        "offset": offset,
-                        "freshness": "pm",
-                        "country": "us",
-                        "search_lang": "en",
-                    },
-                    headers=headers,
+    mentions = mention_queries()[: 16 if is_broad() else 12]
+    players = player_queries()
+    # First mention queries get every site: scope; the rest are unscoped to save quota.
+    full_scope_n = 8
+    for index, query in enumerate(mentions):
+        scopes = web_scopes() if index < full_scope_n else [""]
+        for scope in scopes:
+            items.extend(
+                _brave_hits(
+                    http,
+                    headers,
+                    query,
+                    scope,
+                    limit,
+                    offsets=[0, 1] if not scope else [0],
                 )
-                if not isinstance(data, dict):
-                    break
-                results = (data.get("web") or {}).get("results") or []
-                if not results:
-                    break
-                for row in results:
-                    url = row.get("url") or ""
-                    title = row.get("title") or ""
-                    if not url or not title:
-                        continue
-                    items.append(
-                        item(
-                            source=_source_from_url(url),
-                            url=url,
-                            title=title,
-                            body=row.get("description") or "",
-                            published_at=row.get("page_age") or row.get("age"),
-                            query=q,
-                            extra={"engine": "brave"},
-                        )
-                    )
+            )
+    # Named competitors: open web + LinkedIn. Anyone mentioning them is a lead after Gate 2.
+    for name in players:
+        for scope in ("", "site:linkedin.com"):
+            items.extend(_brave_hits(http, headers, name, scope, limit, offsets=[0]))
     return _dedupe(items)
+
+
+def _brave_hits(
+    http: Http,
+    headers: dict[str, str],
+    query: str,
+    scope: str,
+    limit: int,
+    offsets: list[int],
+) -> list[ChatterItem]:
+    items: list[ChatterItem] = []
+    q = f"{query} {scope}".strip()
+    for offset in offsets:
+        data = http.get_json(
+            "https://api.search.brave.com/res/v1/web/search",
+            params={
+                "q": q,
+                "count": min(20, max(limit, 10)),
+                "offset": offset,
+                "freshness": "pm",
+                "country": "us",
+                "search_lang": "en",
+            },
+            headers=headers,
+        )
+        if not isinstance(data, dict):
+            break
+        results = (data.get("web") or {}).get("results") or []
+        if not results:
+            break
+        for row in results:
+            url = row.get("url") or ""
+            title = row.get("title") or ""
+            if not url or not title:
+                continue
+            items.append(
+                item(
+                    source=_source_from_url(url),
+                    url=url,
+                    title=title,
+                    body=row.get("description") or "",
+                    published_at=row.get("page_age") or row.get("age"),
+                    query=q,
+                    extra={"engine": "brave"},
+                )
+            )
+    return items

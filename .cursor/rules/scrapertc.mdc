@@ -8,8 +8,8 @@ alwaysApply: true
 This product is a **chatter scraper**. It is not ChatGPT, Fable, Asta, or any other LLM researcher.
 
 - **Gate 1** hits public APIs + Brave Search, paginates, retries, dedupes, and writes SQLite. No LLM in the collect path. Never add one.
-- Default search is the six `priority` queries. `--broad` also searches TC companies, genomics, and cannabis tech lists.
-- **Gate 2** is an optional **deterministic** ranker (competition / breakthrough / saturation / relevance). Not a chatbot. Do not replace it with a model call.
+- Default Gate 1 searches mention phrases plus named competitors. `--broad` adds generic plant-TC terms. Gate 2 keeps the leads.
+- **Gate 2** is an optional **deterministic** ranker (competition / breakthrough / saturation / relevance). A named competitor mention is a lead. Not a chatbot. Do not replace it with a model call.
 - Persist every hit. Track `first_seen` / `last_seen` / `hit_count`. Export JSONL. That dump is the deliverable.
 - Prefer official / public APIs. No login scrapers, no unofficial LinkedIn/Meta/X HTML harvest, no scraping google.com SERP HTML.
 - Collectors must fail independently. Brave is the web-wide index; Google CSE is legacy.

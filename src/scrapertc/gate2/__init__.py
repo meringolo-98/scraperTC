@@ -216,7 +216,8 @@ def classify(item: ChatterItem) -> Signal:
         & {"cannabis_tc", "remediation", "tc_company", "genomic_prediction", "cannabis_tech"}
     )
 
-    competition = _score(text, COMPETITION_PHRASES, extra=0.28 if entities else 0.0)
+    # A named player is already a lead. Extra pushes them over LABEL_THRESHOLD.
+    competition = _score(text, COMPETITION_PHRASES, extra=0.36 if entities else 0.0)
     if item.source in {"linkedin", "web", "youtube"} and entities:
         competition = min(1.0, competition + 0.12)
     if any(
@@ -354,7 +355,7 @@ def _relevance(
     if "tc_company" in segments:
         score += 0.18
     if entities:
-        score += 0.12
+        score += 0.22
     if any(noise in text for noise in HOBBY_NOISE) and not cannabis:
         score *= 0.35
     return min(1.0, score)

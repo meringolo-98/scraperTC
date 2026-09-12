@@ -1,5 +1,7 @@
-# Gate 1 search budget. Order matters: collectors hit these first.
-# Target: cannabis TC / remediation lab + genomic prediction for breeders.
+# Gate 1 mention net. Anyone saying these is a candidate; Gate 2 decides if it's a lead.
+# Default collect searches priority + cannabis_tc + genomic_breeding + cannabis_tech
+# plus company names from competitors.yaml. --broad also adds tc_companies (noisier).
+
 priority:
   - "cannabis tissue culture"
   - "cannabis meristem"
@@ -7,8 +9,11 @@ priority:
   - "cannabis genomic selection"
   - "cannabis micropropagation"
   - "predictive breeding cannabis"
+  - "cannabis tissue culture lab"
+  - "HLVd cannabis"
+  - "clean stock cannabis"
+  - "virus-free cannabis"
 
-# Extra phrases Gate 2 uses for domain / relevance. Not all are searched live.
 cannabis_tc:
   - "cannabis tissue culture"
   - "marijuana tissue culture"
@@ -21,6 +26,19 @@ cannabis_tc:
   - "virus-free cannabis"
   - "clean stock cannabis"
   - "cannabis clone tissue culture"
+  - "flasking cannabis"
+  - "meristem tip cannabis"
+  - "viroid-free cannabis"
+  - "cannabis mother stock"
+  - "tissue culture clones cannabis"
+  - "cannabis nursery tissue culture"
+  - "HLVd remediation"
+  - "hop latent cannabis"
+  - "marijuana meristem"
+  - "hemp micropropagation"
+  - "licensed cannabis tissue culture"
+  - "cannabis plantlets tissue culture"
+  - "meristem culture cannabis"
 
 genomic_breeding:
   - "cannabis genomic selection"
@@ -31,6 +49,13 @@ genomic_breeding:
   - "cannabis SNP"
   - "chemotype prediction"
   - "breeding index cannabis"
+  - "cannabis GBLUP"
+  - "hemp genomic selection"
+  - "cannabis breeding genomics"
+  - "cannabis genotype panel"
+  - "cannabis marker assisted selection"
+  - "genomic estimated breeding value cannabis"
+  - "hemp genomic prediction"
 
 cannabis_tech:
   - "cannabis CRISPR"
@@ -38,7 +63,13 @@ cannabis_tech:
   - "cannabis phenotyping"
   - "cannabis automation tissue culture"
   - "cannabis pathogen diagnostics"
+  - "cannabis qPCR"
+  - "HLVd test"
+  - "cannabis pathogen panel"
+  - "cannabis sequencing"
+  - "cannabis phenotyping platform"
 
+# Generic plant-TC talk. Noisy (orchids, bananas). Only with --broad; Gate 2 demotes hobby.
 tc_companies:
   - "tissue culture lab"
   - "plant tissue culture"
@@ -62,10 +93,12 @@ arxiv:
 
 web_scopes:
   - ""
+  - "site:edu"
+  - "site:ncbi.nlm.nih.gov"
+  - "site:biorxiv.org"
+  - "site:patents.google.com"
+  - "site:researchgate.net"
   - "site:linkedin.com"
   - "site:youtube.com"
   - "site:medium.com"
   - "site:substack.com"
-  - "site:researchgate.net"
-  - "site:patents.google.com"
-  - "site:edu"

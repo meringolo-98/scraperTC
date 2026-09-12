@@ -17,7 +17,7 @@ def collect_reddit(http: Http, settings: Settings, limit: int) -> list[ChatterIt
     host = "https://oauth.reddit.com" if token else "https://www.reddit.com"
     items: list[ChatterItem] = []
     reddit_q = str(conf.get("search_query") or "cannabis tissue culture OR meristem OR HLVd")
-    for query in live_queries():
+    for query in live_queries(priority_cap=20, broad_cap=36):
         items.extend(
             _reddit_paged(
                 http,
@@ -136,7 +136,7 @@ def collect_hackernews(http: Http, settings: Settings, limit: int) -> list[Chatt
         return []
     del settings
     items: list[ChatterItem] = []
-    for query in live_queries():
+    for query in live_queries(priority_cap=20, broad_cap=36):
         for page in range(2):
             data = http.get_json(
                 "https://hn.algolia.com/api/v1/search",
@@ -179,7 +179,7 @@ def collect_bluesky(http: Http, settings: Settings, limit: int) -> list[ChatterI
         return []
     del settings
     items: list[ChatterItem] = []
-    for query in live_queries():
+    for query in live_queries(priority_cap=20, broad_cap=36):
         cursor: str | None = None
         for _page in range(2):
             params: dict[str, Any] = {"q": query, "limit": min(limit, 50)}

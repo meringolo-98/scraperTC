@@ -1,0 +1,44 @@
+# Tissue culture chatter queries.
+# Gate 1 searches these. Keep phrases specific enough to avoid
+# generic "culture" noise; Gate 2 still filters mammalian vs plant.
+
+core:
+  - "tissue culture"
+  - "plant tissue culture"
+  - micropropagation
+  - "in vitro propagation"
+  - mericlone
+  - "TC plants"
+  - "tissue cultured"
+
+plant:
+  - "MS medium"
+  - "Murashige and Skoog"
+  - explant
+  - "somatic embryogenesis"
+  - "meristem culture"
+  - "plant cloning lab"
+  - "banana tissue culture"
+  - "orchid flask"
+  - "temporary immersion bioreactor"
+  - "PPM plant preservative"
+  - "kitchen tissue culture"
+
+mammalian:
+  - "cell culture"
+  - "tissue-engineered"
+  - organoid
+  - "iPSC"
+  - "mammalian cell culture"
+
+# Extra Google / CSE site scopes used when GOOGLE_CSE_ID is set.
+web_scopes:
+  - ""
+  - "site:linkedin.com"
+  - "site:youtube.com"
+  - "site:medium.com"
+  - "site:substack.com"
+  - "site:researchgate.net"
+  - "site:patents.google.com"
+  - "site:edu"
+  - "site:gov"

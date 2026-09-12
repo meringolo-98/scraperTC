@@ -1,0 +1,42 @@
+# Known names Gate 2 treats as competition / vendor / lab signals.
+# Add brands, nurseries, media houses, and labs as they surface.
+
+companies:
+  - Plant Cell Technology
+  - Phytotech
+  - PhytoTech Labs
+  - Duchefa
+  - Caisson Labs
+  - HiMedia
+  - Sigma-Aldrich
+  - Merck
+  - Sartorius
+  - Conviron
+  - Kitchen Culture Kits
+  - AgriForest
+  - Oglesby Plants
+  - Segra International
+  - JRT Nurseries
+  - Agromillora
+  - Rancho Tissue Technologies
+  - Xplant
+  - NuPlant
+  - Deroose Plants
+  - Phytelligence
+  - Lowes TC
+  - Valley Tissue Culture
+  - Hartmann's Plant
+  - Knight Hollow
+  - Mountain Shadow Nursery
+  - TC Propagation
+  - In Vitro Microplants
+  - Phytocultures
+  - Highveld Biotech
+  - AL-Rajhi Tissue Culture
+  - Al Wathba Marionnet
+
+aliases:
+  PCT: Plant Cell Technology
+  PPM: Plant Preservative Mixture
+  TIB: temporary immersion bioreactor
+  RITA: temporary immersion

@@ -1,0 +1,17 @@
+---
+description: scraperTC two-gate tissue culture chatter pipeline
+alwaysApply: true
+---
+
+# scraperTC
+
+This repo is a competitive-intelligence intake tool, not a ToS-breaking crawler.
+
+- **Gate 1** collects public chatter about tissue culture (social, video, news, papers, labs, web).
+- **Gate 2** scores that mass for **competition**, **breakthroughs**, and **saturation**.
+- Prefer official / public APIs (Reddit, YouTube Data API, Google CSE, OpenAlex, PubMed, RSS).
+- Do not add login scrapers, session hijacking, or unofficial LinkedIn/Meta/X HTML harvest. LinkedIn and similar closed networks enter through Google CSE `site:` queries or JSON drops in `data/inbox/`.
+- Keep collectors isolated: one source failing must not kill a run.
+- Taste notes about scoring weights go in discussion, not silent prompt rewrites, until they repeat.
+
+When adding a source: config flag in `config/sources.yaml`, collector function, registry entry in `pipeline.COLLECTORS`, and a mocked test.

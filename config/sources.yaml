@@ -1,0 +1,51 @@
+user_agent: "scraperTC/0.1 (+https://github.com/meringolo-98/scraperTC; research)"
+request_delay_seconds: 0.4
+default_limit: 40
+
+collectors:
+  reddit:
+    enabled: true
+    subreddits:
+      - tissuecultureplants
+      - TCLabs
+      - horticulture
+      - botany
+      - IndoorGarden
+      - labrats
+      - biotechnology
+      - PlantedTank
+  news:
+    enabled: true
+  rss:
+    enabled: true
+    feeds:
+      - name: google-news-plant-tc
+        url: "https://news.google.com/rss/search?q=%22plant+tissue+culture%22+OR+micropropagation&hl=en-US&gl=US&ceid=US:en"
+      - name: google-news-tissue-culture
+        url: "https://news.google.com/rss/search?q=%22tissue+culture%22+lab+OR+micropropagation&hl=en-US&gl=US&ceid=US:en"
+  youtube:
+    enabled: true
+    channel_ids: []
+  openalex:
+    enabled: true
+  pubmed:
+    enabled: true
+  arxiv:
+    enabled: true
+  hackernews:
+    enabled: true
+  bluesky:
+    enabled: true
+  github:
+    enabled: true
+  stackexchange:
+    enabled: true
+    sites:
+      - biology
+      - gardening
+      - bioinformatics
+  google_cse:
+    enabled: true
+  inbox:
+    enabled: true
+    directory: data/inbox

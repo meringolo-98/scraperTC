@@ -1,0 +1,68 @@
+[
+  {
+    "source": "linkedin",
+    "url": "https://www.linkedin.com/posts/demo-plant-cell-technology-launch",
+    "title": "Plant Cell Technology is now shipping a new PPM-ready starter kit for home labs",
+    "body": "We launched our wholesale catalog today. Our lab in Maryland is hiring a micropropagation technician and opening commercial-scale banana flask production. Available from our distributor network next week.",
+    "author": "Plant Cell Technology",
+    "published_at": "2026-09-01T12:00:00+00:00",
+    "query": "demo-competition"
+  },
+  {
+    "source": "youtube",
+    "url": "https://www.youtube.com/watch?v=demo-tc-protocol",
+    "title": "How I run a kitchen tissue culture hood for orchids",
+    "body": "Explant to flask walkthrough using MS medium, BAP, and PPM. Contamination rate dropped after switching brands. Shop now for the same jars I use.",
+    "author": "Kitchen Culture Kits",
+    "published_at": "2026-08-20T15:00:00+00:00",
+    "query": "demo-youtube"
+  },
+  {
+    "source": "pubmed",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/00000001/",
+    "title": "A novel temporary immersion bioreactor protocol significantly improved somatic embryogenesis in banana",
+    "body": "We report a first report of reduced contamination and higher survival using an optimized TIB protocol. Multiplication rate increased three-fold versus semi-solid MS medium. DOI: 10.0000/demo",
+    "author": "Agromillora Research",
+    "published_at": "2026-07-11",
+    "query": "demo-breakthrough",
+    "extra": {
+      "labs": ["Agromillora Group"]
+    }
+  },
+  {
+    "source": "reddit",
+    "url": "https://www.reddit.com/r/tissuecultureplants/comments/demo-flood",
+    "title": "Is the TC plant market saturated or is it just Etsy?",
+    "body": "The market is flooded. Too many hobbyist sellers, another TC shop every week, race to the bottom on banana plantlets. Oversupply of mericlones and nothing new in the protocols. Barrier to entry is low.",
+    "author": "u/meristematic",
+    "published_at": "2026-09-05T18:22:00+00:00",
+    "query": "demo-saturation"
+  },
+  {
+    "source": "openalex",
+    "url": "https://openalex.org/Wdemohela",
+    "title": "HEK293 mammalian cell culture scaffold for tissue engineering",
+    "body": "iPSC and organoid work in a clinical trial setting. Mammalian HEK293 culture only.",
+    "author": "Oncology Lab",
+    "published_at": "2026-06-02",
+    "query": "demo-mammalian"
+  },
+  {
+    "source": "news",
+    "url": "https://news.example.com/nuplant-automation",
+    "title": "NuPlant launches robotic micropropagation system for commercial nurseries",
+    "body": "The Australian biotech opened a lab and announced a partnership with Oglesby Plants. Automation of meristem culture is the breakthrough they are selling into a crowded market of TC labs.",
+    "author": "AgTech Wire",
+    "published_at": "2026-04-18T09:00:00+00:00",
+    "query": "demo-mixed"
+  },
+  {
+    "source": "github",
+    "url": "https://github.com/demo/open-tc-protocols",
+    "title": "open-tc-protocols",
+    "body": "Open source protocol notes for plant tissue culture media, PPM dosing, and laminar hood SOP.",
+    "author": "demo",
+    "published_at": "2026-08-01T00:00:00+00:00",
+    "query": "demo-github"
+  }
+]

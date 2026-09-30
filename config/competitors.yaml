@@ -1,0 +1,51 @@
+# Names Gate 2 treats as competition / vendor / lab / platform signals.
+# Cannabis TC + remediation, plant TC companies, genomic/breeding tech.
+
+companies:
+  # Cannabis TC / clean stock / meristem
+  - Segra International
+  - Dark Heart Nursery
+  - Front Range Biosciences
+  - Concept Genetic
+  - Sunrise Genetics
+  - Microclone
+  - Phylos Bioscience
+  # Pathogen / remediation-adjacent diagnostics
+  - TUMI Genomics
+  - Medicinal Genomics
+  - PathogenDx
+  - Agdia
+  - LeafWorks
+  - Steep Hill
+  # Genomic prediction / breeding platforms
+  - New West Genetics
+  - CanBreed
+  - NRGene
+  - KeyGene
+  - Trait Biosciences
+  - Gencove
+  # Plant TC companies / automation / media (vendors and possible comps)
+  - Plant Cell Technology
+  - Phytotech
+  - PhytoTech Labs
+  - Duchefa
+  - Caisson Labs
+  - HiMedia
+  - Kitchen Culture Kits
+  - AgriForest
+  - Oglesby Plants
+  - Agromillora
+  - Rancho Tissue Technologies
+  - Xplant
+  - NuPlant
+  - Deroose Plants
+  - Phytelligence
+  - Sartorius
+  - Conviron
+
+aliases:
+  PCT: Plant Cell Technology
+  PPM: Plant Preservative Mixture
+  TIB: temporary immersion bioreactor
+  RITA: temporary immersion
+  HLVd: hop latent viroid

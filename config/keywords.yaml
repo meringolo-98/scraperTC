@@ -1,0 +1,104 @@
+# Gate 1 mention net. Anyone saying these is a candidate; Gate 2 decides if it's a lead.
+# Default collect searches priority + cannabis_tc + genomic_breeding + cannabis_tech
+# plus company names from competitors.yaml. --broad also adds tc_companies (noisier).
+
+priority:
+  - "cannabis tissue culture"
+  - "cannabis meristem"
+  - "hop latent viroid"
+  - "cannabis genomic selection"
+  - "cannabis micropropagation"
+  - "predictive breeding cannabis"
+  - "cannabis tissue culture lab"
+  - "HLVd cannabis"
+  - "clean stock cannabis"
+  - "virus-free cannabis"
+
+cannabis_tc:
+  - "cannabis tissue culture"
+  - "marijuana tissue culture"
+  - "hemp tissue culture"
+  - "cannabis meristem"
+  - "cannabis micropropagation"
+  - "HLVd"
+  - "hop latent viroid"
+  - "viroid remediation"
+  - "virus-free cannabis"
+  - "clean stock cannabis"
+  - "cannabis clone tissue culture"
+  - "flasking cannabis"
+  - "meristem tip cannabis"
+  - "viroid-free cannabis"
+  - "cannabis mother stock"
+  - "tissue culture clones cannabis"
+  - "cannabis nursery tissue culture"
+  - "HLVd remediation"
+  - "hop latent cannabis"
+  - "marijuana meristem"
+  - "hemp micropropagation"
+  - "licensed cannabis tissue culture"
+  - "cannabis plantlets tissue culture"
+  - "meristem culture cannabis"
+
+genomic_breeding:
+  - "cannabis genomic selection"
+  - "cannabis genomic prediction"
+  - "predictive breeding cannabis"
+  - "cannabis GWAS"
+  - "marker-assisted cannabis"
+  - "cannabis SNP"
+  - "chemotype prediction"
+  - "breeding index cannabis"
+  - "cannabis GBLUP"
+  - "hemp genomic selection"
+  - "cannabis breeding genomics"
+  - "cannabis genotype panel"
+  - "cannabis marker assisted selection"
+  - "genomic estimated breeding value cannabis"
+  - "hemp genomic prediction"
+
+cannabis_tech:
+  - "cannabis CRISPR"
+  - "cannabis genome"
+  - "cannabis phenotyping"
+  - "cannabis automation tissue culture"
+  - "cannabis pathogen diagnostics"
+  - "cannabis qPCR"
+  - "HLVd test"
+  - "cannabis pathogen panel"
+  - "cannabis sequencing"
+  - "cannabis phenotyping platform"
+
+# Generic plant-TC talk. Noisy (orchids, bananas). Only with --broad; Gate 2 demotes hobby.
+tc_companies:
+  - "tissue culture lab"
+  - "plant tissue culture"
+  - micropropagation
+  - "meristem culture"
+  - "temporary immersion bioreactor"
+
+mammalian:
+  - "mammalian cell culture"
+  - organoid
+  - "iPSC"
+
+scholarly:
+  - '(cannabis OR hemp OR "Cannabis sativa") AND (tissue culture OR micropropagation OR meristem OR "hop latent" OR viroid)'
+  - '(cannabis OR hemp OR "Cannabis sativa") AND ("genomic selection" OR "genomic prediction" OR GWAS OR "marker-assisted")'
+  - '(cannabis OR hemp) AND (CRISPR OR phenotyping OR "whole genome")'
+
+arxiv:
+  - 'all:"cannabis" AND (all:"tissue culture" OR all:meristem OR all:"genomic selection")'
+  - 'all:"Cannabis sativa" AND (all:micropropagation OR all:GWAS)'
+
+web_scopes:
+  - ""
+  - "site:edu"
+  - "site:ncbi.nlm.nih.gov"
+  - "site:biorxiv.org"
+  - "site:patents.google.com"
+  - "site:researchgate.net"
+  - "site:linkedin.com"
+  - "site:youtube.com"
+  - "site:medium.com"
+  - "site:substack.com"

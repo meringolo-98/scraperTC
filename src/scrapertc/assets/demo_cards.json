@@ -1,0 +1,57 @@
+[
+  {
+    "source": "ebay",
+    "url": "https://www.ebay.com/itm/demo-base-charizard-steal",
+    "title": "Pokemon Base Set Charizard Holo 4/102 — played",
+    "body": "Classic base charizard. Looks like it has the 1st edition stamp near the artwork. Sold as-is. Unlimited binder copy vibe in title only.",
+    "price_usd": 220,
+    "image_urls": [],
+    "seller": "binderfinds",
+    "condition": "moderately_played",
+    "query": "Charizard Base 4/102",
+    "extra": {"demo": true, "fixture": "steal_1st_ed_underlisted"}
+  },
+  {
+    "source": "tcgplayer",
+    "url": "https://www.tcgplayer.com/product/demo-shadowless-blastoise",
+    "title": "Blastoise Base Set Shadowless Holo",
+    "body": "Shadowless print, LP, clean surface.",
+    "price_usd": 310,
+    "image_urls": [],
+    "seller": "tcg-shop",
+    "condition": "lightly_played",
+    "query": "Blastoise Base 2/102 shadowless",
+    "extra": {"demo": true}
+  },
+  {
+    "source": "pricecharting",
+    "url": "https://www.pricecharting.com/game/demo/venusaur-base",
+    "title": "Venusaur Base Set Unlimited Holo",
+    "body": "Market reference style listing.",
+    "price_usd": 75,
+    "image_urls": [],
+    "query": "Venusaur Base 15/102",
+    "extra": {"demo": true}
+  },
+  {
+    "source": "pokemontcg",
+    "url": "https://www.pokemontcg.io/card/base1-4",
+    "title": "Charizard — Base #4",
+    "body": "rarity=Rare Holo; tcgplayer market=$350.00",
+    "price_usd": 350,
+    "image_urls": [],
+    "condition": "reference",
+    "query": "Charizard Base 4/102",
+    "extra": {"catalog": true, "card_id": "base1-4", "demo": true}
+  },
+  {
+    "source": "mercari",
+    "url": "https://www.mercari.com/us/item/demo-plain-pikachu",
+    "title": "Pikachu Jungle 60/64",
+    "body": "Common jungle pikachu, NM.",
+    "price_usd": 4,
+    "image_urls": [],
+    "query": "Pikachu Jungle",
+    "extra": {"demo": true}
+  }
+]

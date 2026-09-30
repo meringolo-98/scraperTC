@@ -1,0 +1,353 @@
+from __future__ import annotations
+
+from typing import Any
+
+from scrapertc.collectors import collector_conf, enabled, item
+from scrapertc.http import Http
+from scrapertc.models import ChatterItem
+from scrapertc.settings import Settings, arxiv_queries, live_queries, scholarly_queries
+
+
+def collect_openalex(http: Http, settings: Settings, limit: int) -> list[ChatterItem]:
+    if not enabled("openalex"):
+        return []
+    items: list[ChatterItem] = []
+    headers = {"User-Agent": settings.user_agent}
+    for query in live_queries():
+        cursor = "*"
+        for _page in range(2):
+            params = {
+                "search": query,
+                "per_page": min(limit, 50),
+                "sort": "publication_date:desc",
+                "mailto": settings.contact_email,
+                "cursor": cursor,
+            }
+            data = http.get_json(
+                "https://api.openalex.org/works",
+                params=params,
+                headers=headers,
+            )
+            if not isinstance(data, dict):
+                break
+            for work in data.get("results") or []:
+                parsed = _openalex_item(work, query)
+                if parsed:
+                    items.append(parsed)
+            cursor = (data.get("meta") or {}).get("next_cursor")
+            if not cursor:
+                break
+    return _dedupe(items)
+
+
+def _openalex_item(work: dict[str, Any], query: str) -> ChatterItem | None:
+    title = work.get("display_name") or ""
+    if not title:
+        return None
+    url = (work.get("primary_location") or {}).get("landing_page_url") or work.get("id") or ""
+    abstract = _openalex_abstract(work.get("abstract_inverted_index"))
+    authors = [
+        (auth.get("author") or {}).get("display_name")
+        for auth in (work.get("authorships") or [])[:4]
+        if (auth.get("author") or {}).get("display_name")
+    ]
+    institutions = []
+    for auth in work.get("authorships") or []:
+        for inst in auth.get("institutions") or []:
+            name = inst.get("display_name")
+            if name:
+                institutions.append(name)
+    return item(
+        source="openalex",
+        url=url,
+        title=title,
+        body=abstract,
+        author=", ".join(authors) or None,
+        published_at=work.get("publication_date"),
+        query=query,
+        extra={
+            "cited_by": work.get("cited_by_count"),
+            "labs": institutions[:8],
+            "doi": (work.get("ids") or {}).get("doi"),
+        },
+    )
+
+
+def _openalex_abstract(inverted: dict[str, list[int]] | None) -> str:
+    if not inverted:
+        return ""
+    positions: list[tuple[int, str]] = []
+    for word, idxs in inverted.items():
+        for idx in idxs:
+            positions.append((idx, word))
+    positions.sort()
+    return " ".join(word for _, word in positions)[:2000]
+
+
+def collect_pubmed(http: Http, settings: Settings, limit: int) -> list[ChatterItem]:
+    if not enabled("pubmed"):
+        return []
+    items: list[ChatterItem] = []
+    per_query = max(5, min(limit, 25))
+    for term in scholarly_queries()[:3]:
+        search = http.get_json(
+            "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi",
+            params={
+                "db": "pubmed",
+                "term": term,
+                "retmax": per_query,
+                "retmode": "json",
+                "sort": "pub+date",
+                "email": settings.contact_email,
+            },
+        )
+        if not isinstance(search, dict):
+            continue
+        ids = ((search.get("esearchresult") or {}).get("idlist")) or []
+        if not ids:
+            continue
+        summary = http.get_json(
+            "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi",
+            params={
+                "db": "pubmed",
+                "id": ",".join(ids),
+                "retmode": "json",
+                "email": settings.contact_email,
+            },
+        )
+        if not isinstance(summary, dict):
+            continue
+        result = summary.get("result") or {}
+        for pmid in ids:
+            row = result.get(pmid) or {}
+            title = row.get("title") or ""
+            if not title:
+                continue
+            items.append(
+                item(
+                    source="pubmed",
+                    url=f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/",
+                    title=title,
+                    body=row.get("source") or "",
+                    author=_first_author(row),
+                    published_at=row.get("pubdate") or row.get("sortpubdate"),
+                    query=term,
+                    extra={"pmid": pmid, "journal": row.get("fulljournalname")},
+                )
+            )
+    return _dedupe(items)
+
+
+def _first_author(row: dict[str, Any]) -> str | None:
+    authors = row.get("authors") or []
+    if authors:
+        return authors[0].get("name")
+    return None
+
+
+def collect_arxiv(http: Http, settings: Settings, limit: int) -> list[ChatterItem]:
+    if not enabled("arxiv"):
+        return []
+    del settings
+    items: list[ChatterItem] = []
+    import feedparser
+
+    per_query = max(5, min(limit, 25))
+    for query in arxiv_queries()[:3]:
+        text = http.get_text(
+            "https://export.arxiv.org/api/query",
+            params={
+                "search_query": query,
+                "start": 0,
+                "max_results": per_query,
+                "sortBy": "submittedDate",
+                "sortOrder": "descending",
+            },
+        )
+        if not text:
+            continue
+        parsed = feedparser.parse(text)
+        for entry in parsed.entries:
+            items.append(
+                item(
+                    source="arxiv",
+                    url=getattr(entry, "link", "") or "",
+                    title=getattr(entry, "title", "") or "",
+                    body=getattr(entry, "summary", "") or "",
+                    author=getattr(entry, "author", None),
+                    published_at=getattr(entry, "published", None),
+                    query=query,
+                )
+            )
+    return _dedupe(items)
+
+
+def collect_stackexchange(http: Http, settings: Settings, limit: int) -> list[ChatterItem]:
+    if not enabled("stackexchange"):
+        return []
+    del settings
+    items: list[ChatterItem] = []
+    for site in collector_conf("stackexchange").get("sites") or ["biology"]:
+        data = http.get_json(
+            "https://api.stackexchange.com/2.3/search/advanced",
+            params={
+                "q": str(collector_conf("stackexchange").get("query") or "cannabis tissue culture"),
+                "site": site,
+                "pagesize": min(limit, 30),
+                "sort": "creation",
+                "order": "desc",
+                "filter": "default",
+            },
+        )
+        if not isinstance(data, dict):
+            continue
+        for row in data.get("items") or []:
+            items.append(
+                item(
+                    source="stackexchange",
+                    url=row.get("link") or "",
+                    title=row.get("title") or "",
+                    body=" ".join(row.get("tags") or []),
+                    author=((row.get("owner") or {}).get("display_name")),
+                    published_at=row.get("creation_date"),
+                    query=site,
+                    extra={"score": row.get("score"), "site": site},
+                )
+            )
+    return _dedupe(items)
+
+
+def collect_semanticscholar(http: Http, settings: Settings, limit: int) -> list[ChatterItem]:
+    if not enabled("semanticscholar"):
+        return []
+    items: list[ChatterItem] = []
+    headers = None
+    if settings.semantic_scholar_api_key:
+        headers = {"x-api-key": settings.semantic_scholar_api_key}
+    for query in live_queries(priority_cap=4, broad_cap=6):
+        offset = 0
+        for _page in range(2):
+            data = http.get_json(
+                "https://api.semanticscholar.org/graph/v1/paper/search",
+                params={
+                    "query": query,
+                    "offset": offset,
+                    "limit": min(limit, 50),
+                    "fields": "title,abstract,url,year,authors,publicationDate,externalIds",
+                },
+                headers=headers,
+            )
+            if not isinstance(data, dict):
+                break
+            for row in data.get("data") or []:
+                parsed = _semanticscholar_item(row, query)
+                if parsed:
+                    items.append(parsed)
+            nxt = data.get("next")
+            if nxt is None:
+                break
+            offset = int(nxt)
+    return _dedupe(items)
+
+
+def _semanticscholar_item(row: dict[str, Any], query: str) -> ChatterItem | None:
+    title = row.get("title") or ""
+    if not title:
+        return None
+    url = row.get("url") or ""
+    ext = row.get("externalIds") or {}
+    if not url and ext.get("DOI"):
+        url = f"https://doi.org/{ext['DOI']}"
+    authors = [a.get("name") for a in (row.get("authors") or [])[:4] if a.get("name")]
+    return item(
+        source="semanticscholar",
+        url=url or f"https://www.semanticscholar.org/paper/{row.get('paperId')}",
+        title=title,
+        body=row.get("abstract") or "",
+        author=", ".join(authors) or None,
+        published_at=row.get("publicationDate") or str(row.get("year") or ""),
+        query=query,
+        extra={"paper_id": row.get("paperId")},
+    )
+
+
+def collect_crossref(http: Http, settings: Settings, limit: int) -> list[ChatterItem]:
+    if not enabled("crossref"):
+        return []
+    items: list[ChatterItem] = []
+    headers = {"User-Agent": settings.user_agent}
+    for query in live_queries(priority_cap=4, broad_cap=6):
+        cursor = "*"
+        for _page in range(2):
+            data = http.get_json(
+                "https://api.crossref.org/works",
+                params={
+                    "query": query,
+                    "rows": min(limit, 50),
+                    "sort": "published",
+                    "order": "desc",
+                    "cursor": cursor,
+                    "mailto": settings.contact_email,
+                },
+                headers=headers,
+            )
+            if not isinstance(data, dict):
+                break
+            message = data.get("message") or {}
+            for row in message.get("items") or []:
+                parsed = _crossref_item(row, query)
+                if parsed:
+                    items.append(parsed)
+            cursor = message.get("next-cursor")
+            if not cursor or not (message.get("items") or []):
+                break
+    return _dedupe(items)
+
+
+def _crossref_item(row: dict[str, Any], query: str) -> ChatterItem | None:
+    titles = row.get("title") or []
+    title = titles[0] if titles else ""
+    if not title:
+        return None
+    doi = row.get("DOI") or ""
+    url = row.get("URL") or (f"https://doi.org/{doi}" if doi else "")
+    if not url:
+        return None
+    authors = []
+    for auth in (row.get("author") or [])[:4]:
+        name = f"{auth.get('given') or ''} {auth.get('family') or ''}".strip()
+        if name:
+            authors.append(name)
+    containers = row.get("container-title") or []
+    return item(
+        source="crossref",
+        url=url,
+        title=title,
+        body=(row.get("abstract") or "")[:2000],
+        author=", ".join(authors) or None,
+        published_at=_crossref_date(row),
+        query=query,
+        extra={"doi": doi, "journal": containers[0] if containers else None},
+    )
+
+
+def _crossref_date(row: dict[str, Any]) -> str | None:
+    parts = ((row.get("issued") or {}).get("date-parts") or [[]])[0]
+    if len(parts) >= 3:
+        return f"{int(parts[0]):04d}-{int(parts[1]):02d}-{int(parts[2]):02d}"
+    if len(parts) == 2:
+        return f"{int(parts[0]):04d}-{int(parts[1]):02d}"
+    if parts:
+        return str(parts[0])
+    return None
+
+
+def _dedupe(items: list[ChatterItem]) -> list[ChatterItem]:
+    seen: set[str] = set()
+    unique: list[ChatterItem] = []
+    for entry in items:
+        if not entry or entry.id in seen:
+            continue
+        seen.add(entry.id)
+        unique.append(entry)
+    return unique

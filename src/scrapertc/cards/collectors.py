@@ -414,7 +414,7 @@ def _parse_pricecharting(text: str, *, query: str, limit: int) -> list[CardListi
         if not link:
             continue
         title = html_lib.unescape(link.group("title")).strip()
-        url = link.group("url")
+        url = html_lib.unescape(link.group("url")).strip()
         if not title or not url:
             continue
         img_match = _PC_IMG.search(block)

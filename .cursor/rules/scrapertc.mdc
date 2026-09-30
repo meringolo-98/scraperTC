@@ -14,4 +14,15 @@ This product is a **chatter scraper**. It is not ChatGPT, Fable, Asta, or any ot
 - Prefer official / public APIs. No login scrapers, no unofficial LinkedIn/Meta/X HTML harvest, no scraping google.com SERP HTML.
 - Collectors must fail independently. Brave is the web-wide index; Google CSE is legacy.
 
-Tune search in `config/keywords.yaml` (`priority` first), names in `config/competitors.yaml`, sources in `config/sources.yaml`.
+## Secondary product: Pokemon cards
+
+`scrapertc cards …` is a **secondary use** of the same scrape permission and budget:
+
+- Same User-Agent, `request_delay_seconds`, Brave key, and HTTP retry/pacing (`Http`).
+- Cap secondary spend with `config/cards.yaml` → `budget_share` (default 0.25 of Gate 1 `default_limit`).
+- Separate SQLite: `data/cards.db` (never write card rows into `chatter.db`).
+- Marketplace discovery uses Brave `site:` scopes (eBay, TCGPlayer, PriceCharting, …) — same pattern as Gate 1 web scopes. Optional eBay API keys. Pokemon TCG API for catalog/prices.
+- Visual grade analysis and steal detection are **deterministic** (Pillow CV + rule heuristics). No LLM in the collect / vision / steal path.
+- Do not add unofficial HTML scrapers for eBay/TCGPlayer login walls.
+
+Tune search in `config/keywords.yaml` (`priority` first), names in `config/competitors.yaml`, sources in `config/sources.yaml`, cards in `config/cards.yaml`.

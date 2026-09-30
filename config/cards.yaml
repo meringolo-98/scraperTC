@@ -1,0 +1,128 @@
+# Pokemon card secondary product — shares scrape permission + budget with Gate 1.
+# Uses the same User-Agent, request_delay_seconds, and Brave key from sources.yaml.
+# budget_share caps secondary Brave/API spend so TC chatter keeps the primary quota.
+
+budget_share: 0.25
+default_limit: 20
+image_analyze_limit: 8
+
+# Watchlist / find targets. Override on CLI with --query.
+targets:
+  - name: Charizard
+    set: Base
+    number: "4/102"
+    variants:
+      - "1st edition"
+      - shadowless
+      - unlimited
+  - name: Blastoise
+    set: Base
+    number: "2/102"
+    variants:
+      - "1st edition"
+      - shadowless
+  - name: Venusaur
+    set: Base
+    number: "15/102"
+    variants:
+      - "1st edition"
+      - shadowless
+
+# Marketplace scopes — same pattern as Gate 1 web_scopes (Brave site: filters).
+# These are the "normal scrape" options for marketplace discovery.
+sites:
+  ebay:
+    enabled: true
+    scope: "site:ebay.com"
+    query_suffix: "pokemon card"
+  tcgplayer:
+    enabled: true
+    scope: "site:tcgplayer.com"
+    query_suffix: "pokemon"
+  pricecharting:
+    enabled: true
+    scope: "site:pricecharting.com"
+    query_suffix: "pokemon"
+  mercari:
+    enabled: true
+    scope: "site:mercari.com"
+    query_suffix: "pokemon card"
+  facebook_marketplace:
+    enabled: false
+    scope: "site:facebook.com/marketplace"
+    query_suffix: "pokemon card"
+  trollandtoad:
+    enabled: true
+    scope: "site:trollandtoad.com"
+    query_suffix: "pokemon"
+
+collectors:
+  brave_markets:
+    enabled: true
+  pokemontcg:
+    enabled: true
+  ebay_api:
+    enabled: true
+  inbox:
+    enabled: true
+    directory: data/cards/inbox
+
+# Steal heuristics: understated edition / set / print vs market.
+steal:
+  min_score: 0.55
+  price_gap_ratio: 2.5
+  valuable_markers:
+    - "1st edition"
+    - "first edition"
+    - "1st ed"
+    - shadowless
+    - "shadow less"
+    - "error card"
+    - misprint
+    - "trophy card"
+    - "promo"
+    - "psa 10"
+    - "bgs 10"
+    - "cgc 10"
+  understate_phrases:
+    - "base set"
+    - "base"
+    - unlimited
+    - "played"
+    - "lp"
+    - "mp"
+    - "hp"
+  high_value_cards:
+    - name: Charizard
+      set: Base
+      number: "4/102"
+      markers: ["1st edition", shadowless, holo]
+      floor_usd:
+        unlimited_holo: 150
+        shadowless: 400
+        "1st edition": 2500
+    - name: Blastoise
+      set: Base
+      number: "2/102"
+      markers: ["1st edition", shadowless, holo]
+      floor_usd:
+        unlimited_holo: 80
+        shadowless: 200
+        "1st edition": 900
+    - name: Venusaur
+      set: Base
+      number: "15/102"
+      markers: ["1st edition", shadowless, holo]
+      floor_usd:
+        unlimited_holo: 60
+        shadowless: 150
+        "1st edition": 700
+
+# Visual grade defect thresholds (deterministic CV — no LLM).
+vision:
+  centering_warn_ratio: 60
+  centering_fail_ratio: 70
+  whitening_warn_pct: 8.0
+  whitening_fail_pct: 18.0
+  edge_sample_pct: 4.0
+  white_luma_min: 220

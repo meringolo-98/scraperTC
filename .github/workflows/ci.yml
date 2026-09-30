@@ -20,3 +20,5 @@ jobs:
         run: pytest -q
       - name: Demo pipeline
         run: scrapertc run --demo
+      - name: Cards demo pipeline
+        run: scrapertc cards run --demo

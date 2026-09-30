@@ -75,6 +75,17 @@ class Http:
             return None
         return response.text
 
+    def get_bytes(self, url: str, *, params: dict[str, Any] | None = None) -> bytes | None:
+        """Fetch raw bytes (listing images) under the same pacing budget."""
+        response = self.get(
+            url,
+            params=params,
+            headers={"Accept": "*/*"},
+        )
+        if response.status_code != 200:
+            return None
+        return response.content or None
+
     def post(
         self,
         url: str,

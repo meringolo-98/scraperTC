@@ -56,6 +56,10 @@ class Settings(BaseSettings):
     brave_api_key: str = ""
     semantic_scholar_api_key: str = ""
     scrapertc_db: str = "data/chatter.db"
+    scrapertc_cards_db: str = "data/cards.db"
+    ebay_app_id: str = ""
+    ebay_oauth_token: str = ""
+    pokemontcg_api_key: str = ""
 
     user_agent: str = Field(default="")
     request_delay_seconds: float = 0.4

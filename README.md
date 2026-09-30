@@ -13,6 +13,8 @@ Gate 2 is a deterministic scorer (competition / breakthrough / saturation). It i
 
 Target: cannabis tissue culture / remediation lab + genomic prediction for breeders.
 
+**Secondary product:** Pokemon card marketplace intake (`scrapertc cards …`) reuses the same scrape permission (User-Agent, delay, Brave quota) under a `budget_share` cap. Card rows live in `data/cards.db`, not the chatter store.
+
 ## Quick start
 
 ```bash
@@ -64,8 +66,35 @@ Nothing is required for PubMed, OpenAlex, Crossref, arXiv, news RSS, HN, Bluesky
 | `REDDIT_CLIENT_ID` + `REDDIT_CLIENT_SECRET` | [Reddit apps](https://www.reddit.com/prefs/apps) (script type) | Use if public Reddit JSON returns 403. Optional. |
 | `GITHUB_TOKEN` | GitHub → Settings → Developer settings → PAT | Higher search rate limits. Optional. |
 | `CONTACT_EMAIL` | Your email | Not a secret. User-Agent for NCBI / OpenAlex / Crossref. |
+| `EBAY_OAUTH_TOKEN` / `EBAY_APP_ID` | eBay developer | Optional direct eBay search for the cards product. Brave `site:ebay.com` works without them. |
+| `POKEMONTCG_API_KEY` | [pokemontcg.io](https://docs.pokemontcg.io/) | Optional higher rate limits for catalog/prices. |
+| `SCRAPERTC_CARDS_DB` | Local path | Cards SQLite (default `data/cards.db`). |
 
 `scrapertc status` shows which collectors are waiting on keys.
+
+## Pokemon cards (secondary)
+
+Shares Gate 1 HTTP pacing + Brave key. Caps spend via `config/cards.yaml` → `budget_share` (default 25% of `default_limit`).
+
+```bash
+scrapertc cards run --demo
+scrapertc cards find "Charizard Base 4/102 1st edition" --sites ebay,tcgplayer,pricecharting
+scrapertc cards collect --query "Blastoise Base shadowless" --limit 10
+scrapertc cards analyze          # centering / whitening / corner wear on listing photos
+scrapertc cards steals           # mislisted / underpriced valuable variants
+scrapertc cards export --steals-only --out data/cards/steals.jsonl
+```
+
+| Collector | What it catches | Keys |
+| --- | --- | --- |
+| `brave_markets` | Brave `site:` scopes for eBay, TCGPlayer, PriceCharting, Mercari, Troll and Toad (toggle in `config/cards.yaml`) | `BRAVE_API_KEY` (shared) |
+| `pokemontcg` | Official catalog + TCGPlayer market prices | Optional API key |
+| `ebay_api` | eBay Browse / Finding | Optional OAuth or app id |
+| `inbox` | Manual exports in `data/cards/inbox/` | None |
+
+**Vision** (deterministic Pillow heuristics, no LLM): border centering LR/TB, edge whitening %, corner wear proxy → defect labels + grade band.
+
+**Steals**: title says base/unlimited while body/price implies 1st edition / shadowless / other high-value markers vs configured floors.
 
 ## Collectors
 
@@ -109,8 +138,9 @@ scrapertc export --labeled --out data/labeled.jsonl
 - `config/keywords.yaml` — live search budget (`priority`) and scholarly queries
 - `config/sources.yaml` — collectors, cannabis subreddits, RSS
 - `config/competitors.yaml` — TC labs, genomics platforms, media vendors
+- `config/cards.yaml` — Pokemon watchlist, marketplace scopes, steal floors, vision thresholds, `budget_share`
 
-SQLite lives at `data/chatter.db` (override with `SCRAPERTC_DB`).
+SQLite lives at `data/chatter.db` (override with `SCRAPERTC_DB`). Cards use `data/cards.db`.
 
 ## Legal
 

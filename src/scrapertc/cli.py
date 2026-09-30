@@ -7,6 +7,17 @@ from rich.console import Console
 from rich.table import Table
 
 from scrapertc import __version__
+from scrapertc.cards.config import budget_cap, enabled_sites
+from scrapertc.cards.demo import demo_card_listings
+from scrapertc.cards.pipeline import (
+    analyze_grades,
+    collect_cards,
+    detect_steals,
+    open_card_store,
+    report_cards,
+    run_cards,
+)
+from scrapertc.cards.store import CardStore
 from scrapertc.demo import demo_items
 from scrapertc.pipeline import COLLECTORS, collect, open_store, refine, report
 from scrapertc.settings import get_settings
@@ -14,8 +25,13 @@ from scrapertc.settings import get_settings
 app = typer.Typer(
     no_args_is_help=True,
     add_completion=False,
-    help="Cannabis TC chatter scraper: collect, store, dump. Not a chatbot.",
+    help="Cannabis TC chatter scraper + secondary Pokemon card intake. Not a chatbot.",
 )
+cards_app = typer.Typer(
+    no_args_is_help=True,
+    help="Secondary product: find Pokemon cards on eBay/TCG/etc, grade photos, flag steals.",
+)
+app.add_typer(cards_app, name="cards")
 console = Console()
 
 
@@ -124,6 +140,10 @@ def status_cmd() -> None:
             ok = "search waiting on key"
         ready.add_row(name, extra, ok)
     console.print(ready)
+    console.print(
+        "Secondary product: [bold]scrapertc cards status[/bold] "
+        f"(budget_cap={budget_cap(settings.default_limit)})"
+    )
 
 
 @app.command("export")
@@ -138,6 +158,189 @@ def export_cmd(
     store = open_store(settings)
     n = store.export_jsonl(out, labeled_only=labeled)
     console.print(f"exported {n} rows → {out}")
+
+
+@cards_app.command("find")
+def cards_find_cmd(
+    query: str = typer.Argument(..., help="Card search, e.g. 'Charizard Base 4/102 1st edition'."),
+    sites: str | None = typer.Option(
+        None,
+        "--sites",
+        help="Comma-separated site keys from config/cards.yaml (ebay,tcgplayer,...).",
+    ),
+    only: str | None = typer.Option(
+        None,
+        "--only",
+        help="Collectors: brave_markets,pokemontcg,ebay_api,inbox.",
+    ),
+    limit: int | None = typer.Option(
+        None, "--limit", help="Override secondary budget cap for this run."
+    ),
+    analyze: bool = typer.Option(
+        True, "--analyze/--no-analyze", help="Run visual grade heuristics on listing images."
+    ),
+    steals: bool = typer.Option(
+        True, "--steals/--no-steals", help="Flag underpriced / mislisted valuable variants."
+    ),
+) -> None:
+    """Find a specific card across marketplace scopes + Pokemon TCG catalog."""
+    site_list = [p.strip() for p in sites.split(",")] if sites else None
+    only_list = [p.strip() for p in only.split(",")] if only else None
+    stats = collect_cards(query=query, only=only_list, sites=site_list, limit=limit)
+    _print_stats("cards collect", stats)
+    if analyze:
+        _print_stats("cards vision", analyze_grades(limit=limit))
+    if steals:
+        _print_stats("cards steals", detect_steals())
+    paths = report_cards()
+    console.print(f"Report: {paths['html']}")
+
+
+@cards_app.command("collect")
+def cards_collect_cmd(
+    query: str | None = typer.Option(None, "--query", help="Optional override of watchlist."),
+    sites: str | None = typer.Option(None, "--sites"),
+    only: str | None = typer.Option(None, "--only"),
+    limit: int | None = typer.Option(None, "--limit"),
+    demo: bool = typer.Option(False, "--demo", help="Offline fixtures, no network."),
+) -> None:
+    """Intake marketplace + catalog hits into data/cards.db (shared scrape budget)."""
+    site_list = [p.strip() for p in sites.split(",")] if sites else None
+    only_list = [p.strip() for p in only.split(",")] if only else None
+    items = demo_card_listings() if demo else None
+    _print_stats(
+        "cards collect",
+        collect_cards(
+            query=query,
+            only=only_list,
+            sites=site_list,
+            limit=limit,
+            items=items,
+        ),
+    )
+
+
+@cards_app.command("analyze")
+def cards_analyze_cmd(
+    limit: int | None = typer.Option(None, "--limit", help="Max images to inspect."),
+    no_fetch: bool = typer.Option(
+        False, "--no-fetch", help="Only use cached images under data/cards/images/."
+    ),
+) -> None:
+    """Visual grade defects: centering, edge whitening, corner wear (deterministic CV)."""
+    _print_stats("cards vision", analyze_grades(limit=limit, fetch=not no_fetch))
+
+
+@cards_app.command("steals")
+def cards_steals_cmd() -> None:
+    """Flag listings that look mis-titled relative to a higher-value variant."""
+    _print_stats("cards steals", detect_steals())
+    store = open_card_store()
+    rows = store.steal_rows(min_score=0.0)
+    table = Table(title="steal candidates")
+    table.add_column("score")
+    table.add_column("title")
+    table.add_column("listed_as")
+    table.add_column("suspected")
+    table.add_column("price")
+    for row in rows[:30]:
+        price = row.get("listed_price")
+        table.add_row(
+            str(row.get("score")),
+            str(row.get("title") or "")[:60],
+            str(row.get("listed_as") or ""),
+            str(row.get("suspected") or ""),
+            f"${price:.0f}" if isinstance(price, (int, float)) else "",
+        )
+    console.print(table)
+
+
+@cards_app.command("run")
+def cards_run_cmd(
+    query: str | None = typer.Option(None, "--query"),
+    sites: str | None = typer.Option(None, "--sites"),
+    only: str | None = typer.Option(None, "--only"),
+    limit: int | None = typer.Option(None, "--limit"),
+    demo: bool = typer.Option(False, "--demo"),
+    skip_vision: bool = typer.Option(False, "--skip-vision"),
+) -> None:
+    """Collect → vision → steals → report for the cards product."""
+    site_list = [p.strip() for p in sites.split(",")] if sites else None
+    only_list = [p.strip() for p in only.split(",")] if only else None
+    items = demo_card_listings() if demo else None
+    result = run_cards(
+        query=query,
+        only=only_list,
+        sites=site_list,
+        limit=limit,
+        items=items,
+        skip_vision=skip_vision or demo,
+    )
+    _print_stats("cards collect", result["collect"])  # type: ignore[arg-type]
+    _print_stats("cards vision", result["vision"])  # type: ignore[arg-type]
+    _print_stats("cards steals", result["steals"])  # type: ignore[arg-type]
+    console.print(f"Report: {result['report']['html']}")  # type: ignore[index]
+
+
+@cards_app.command("status")
+def cards_status_cmd() -> None:
+    """Show cards DB counts, enabled sites, and shared budget cap."""
+    settings = get_settings()
+    store = open_card_store(settings)
+    counts = store.counts()
+    table = Table(title="scraperTC cards (secondary)")
+    table.add_column("key")
+    table.add_column("value")
+    table.add_row("version", __version__)
+    table.add_row("db", str(store.path))
+    table.add_row("budget_cap", str(budget_cap(settings.default_limit)))
+    table.add_row("request_delay_seconds", str(settings.request_delay_seconds))
+    table.add_row("user_agent", settings.user_agent)
+    for key, value in sorted(counts.items()):
+        table.add_row(key, str(value))
+    console.print(table)
+
+    sites = Table(title="marketplace scopes")
+    sites.add_column("site")
+    sites.add_column("scope")
+    for name, conf in enabled_sites().items():
+        sites.add_row(name, str(conf.get("scope") or ""))
+    console.print(sites)
+
+    ready = Table(title="card collectors")
+    ready.add_column("name")
+    ready.add_column("needs")
+    ready.add_column("ready")
+    ready.add_row(
+        "brave_markets",
+        "BRAVE_API_KEY (shared with Gate 1)",
+        "yes" if settings.brave_api_key else "waiting on key",
+    )
+    ready.add_row("pokemontcg", "public API (optional POKEMONTCG_API_KEY)", "yes")
+    ebay_ready = "yes" if (settings.ebay_oauth_token or settings.ebay_app_id) else "optional keys"
+    ready.add_row("ebay_api", "EBAY_OAUTH_TOKEN or EBAY_APP_ID", ebay_ready)
+    ready.add_row("inbox", "data/cards/inbox JSON/JSONL", "yes")
+    console.print(ready)
+
+
+@cards_app.command("export")
+def cards_export_cmd(
+    out: Path = typer.Option(Path("data/cards/export.jsonl"), "--out"),
+    steals_only: bool = typer.Option(False, "--steals-only"),
+) -> None:
+    """Dump card listings (+ grades / steals) to JSONL."""
+    store: CardStore = open_card_store()
+    n = store.export_jsonl(out, steals_only=steals_only)
+    console.print(f"exported {n} rows → {out}")
+
+
+@cards_app.command("report")
+def cards_report_cmd() -> None:
+    """Write cards markdown/HTML/JSON reports."""
+    paths = report_cards()
+    console.print("Wrote reports:")
+    for kind, path in paths.items():
+        console.print(f"  {kind}: {path}")
 
 
 if __name__ == "__main__":

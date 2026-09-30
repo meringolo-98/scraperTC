@@ -15,6 +15,14 @@ data/inbox/*
 !data/inbox/.gitkeep
 data/reports/*
 !data/reports/.gitkeep
+data/cards/inbox/*
+!data/cards/inbox/.gitkeep
+data/cards/reports/*
+!data/cards/reports/.gitkeep
+data/cards/images/*
+!data/cards/images/.gitkeep
+data/cards/*.db
+data/cards/export.jsonl
 .coverage
 htmlcov/
 *.log

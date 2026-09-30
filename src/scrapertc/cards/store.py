@@ -214,6 +214,15 @@ class CardStore:
         )
         self._conn.commit()
 
+    def clear_all(self) -> int:
+        """Wipe listings/grades/steals so a live hunt doesn't mix with dead demos."""
+        before = self._conn.execute("SELECT COUNT(*) FROM listings").fetchone()[0]
+        self._conn.execute("DELETE FROM steals")
+        self._conn.execute("DELETE FROM grades")
+        self._conn.execute("DELETE FROM listings")
+        self._conn.commit()
+        return int(before)
+
     def all_listings(self) -> list[CardListing]:
         rows = self._conn.execute("SELECT * FROM listings ORDER BY collected_at DESC").fetchall()
         return [self._listing_from_row(row) for row in rows]

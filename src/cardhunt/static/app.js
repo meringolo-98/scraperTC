@@ -25,16 +25,19 @@ function itemHtml(row, { steal = false } = {}) {
   const grade = row.grade_band || "n/a";
   const reason = (row.reasons || [])[0] || row.body || "";
   const badges = [];
+  const live = row.extra && (row.extra.live || row.extra.engine === "pricecharting" || row.extra.engine === "live_search");
   if (steal || row.steal_score) badges.push(`<span class="badge steal">steal ${row.score ?? row.steal_score}</span>`);
+  if (live || (!row.extra || !row.extra.demo)) badges.push(`<span class="badge">live</span>`);
   if ((row.defects || []).some((d) => String(d).includes("whitening") || String(d).includes("center"))) {
     badges.push(`<span class="badge warn">grade risk</span>`);
   }
   badges.push(`<span class="badge">${row.source || "?"}</span>`);
+  const linkLabel = (row.condition === "search") ? "Open live search" : "Open live page";
   return `<li class="item">
     <p class="title">${badges.join("")}${escapeHtml(row.title || row.listing_id || "listing")}</p>
     <p class="meta">${money(row.price_usd ?? row.listed_price)} · grade ${escapeHtml(grade)} · defects ${escapeHtml(defects)}</p>
     <p class="meta">${escapeHtml(reason).slice(0, 180)}</p>
-    ${row.url ? `<p class="meta"><a href="${escapeAttr(row.url)}" target="_blank" rel="noopener">Open listing</a></p>` : ""}
+    ${row.url ? `<p class="meta"><a href="${escapeAttr(row.url)}" target="_blank" rel="noopener">${linkLabel}</a></p>` : ""}
   </li>`;
 }
 
@@ -103,12 +106,13 @@ async function boot() {
     const data = await res.json();
     $("#ver").textContent = data.version || "0.1";
     const keys = [];
-    keys.push(data.brave ? "Brave ready" : "Demo / catalog only");
+    keys.push(data.brave ? "Brave ready" : "PriceCharting + TCG live");
     if (data.ebay) keys.push("eBay API");
     $("#keys").textContent = keys.join(" · ");
-    statusLine.textContent = data.brave
-      ? "Live hunt ready — or tap Try demo."
-      : "No Brave key yet — Try demo works offline.";
+    statusLine.textContent = "Type a card and tap Hunt for live links.";
+    if (!queryInput.value) {
+      queryInput.value = "Charizard Base Set 4/102";
+    }
   } catch {
     statusLine.textContent = "Server not reachable.";
   }

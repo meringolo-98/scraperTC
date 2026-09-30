@@ -39,6 +39,7 @@ def collect_cards(
     settings: Settings | None = None,
     store: CardStore | None = None,
     items: list[CardListing] | None = None,
+    replace: bool = False,
 ) -> dict[str, int | str]:
     """Secondary Gate 1 — marketplace + catalog intake under shared scrape budget."""
     settings = settings or get_settings()
@@ -50,6 +51,9 @@ def collect_cards(
     gathered: list[CardListing] = list(items or [])
     errors: dict[str, str] = {}
     per_source: dict[str, int] = {}
+    cleared = 0
+    if replace and items is None:
+        cleared = store.clear_all()
 
     if items is None:
         http = Http(settings)
@@ -59,7 +63,7 @@ def collect_cards(
                     continue
                 try:
                     fn = CARD_COLLECTORS[name]
-                    if name == "brave_markets":
+                    if name in {"brave_markets", "live_searches"}:
                         batch = fn(http, settings, cap, query=query, sites=sites)
                     else:
                         batch = fn(http, settings, cap, query=query)
@@ -78,6 +82,7 @@ def collect_cards(
         "new": written["new"],
         "updated": written["updated"],
         "upserted": written["written"],
+        "cleared": cleared,
         "budget_cap": cap,
         "budget_share": str(cards_config().get("budget_share") or 0.25),
         **{f"collector:{k}": v for k, v in per_source.items()},
@@ -169,6 +174,7 @@ def run_cards(
     store: CardStore | None = None,
     items: list[CardListing] | None = None,
     skip_vision: bool = False,
+    replace: bool = False,
 ) -> dict[str, dict[str, int | str] | dict[str, str]]:
     settings = settings or get_settings()
     store = store or open_card_store(settings)
@@ -180,6 +186,7 @@ def run_cards(
         settings=settings,
         store=store,
         items=items,
+        replace=replace or items is None,
     )
     vision_stats: dict[str, int | str] = {"skipped": 1}
     if not skip_vision:

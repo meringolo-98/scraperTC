@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import html as html_lib
 import json
+import re
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote_plus
 
 from scrapertc.cards.catalog import infer_condition
 from scrapertc.cards.config import (
@@ -150,6 +153,13 @@ def collect_pokemontcg(
             set_info = row.get("set") or {}
             number = row.get("number") or ""
             set_name = set_info.get("name") or ""
+            # When hunting original Base Set, skip Base Set 2 / later reprints.
+            if (
+                "base set 2" not in q.lower()
+                and re.search(r"\bbase(\s+set)?\b", q.lower())
+                and "base set 2" in set_name.lower()
+            ):
+                continue
             images = row.get("images") or {}
             image_urls = [u for u in (images.get("large"), images.get("small")) if u]
             prices = _extract_tcgplayer_prices(row)
@@ -164,10 +174,13 @@ def collect_pokemontcg(
                     "tcgplayer "
                     + ", ".join(f"{k}=${v:.2f}" for k, v in prices.items() if v is not None)
                 )
+            tcg_url = (row.get("tcgplayer") or {}).get("url") or ""
+            # Prefer live TCGPlayer product deep-link (redirects to current product page).
+            url = tcg_url or f"https://www.pokemontcg.io/card/{card_id}"
             items.append(
                 listing(
-                    source="pokemontcg",
-                    url=f"https://www.pokemontcg.io/card/{card_id}",
+                    source="tcgplayer" if tcg_url else "pokemontcg",
+                    url=url,
                     title=title,
                     body="; ".join(body_parts),
                     price_usd=price,
@@ -180,6 +193,7 @@ def collect_pokemontcg(
                         "rarity": row.get("rarity"),
                         "tcgplayer_prices": prices,
                         "catalog": True,
+                        "live": True,
                     },
                 )
             )
@@ -188,25 +202,30 @@ def collect_pokemontcg(
 
 def _pokemontcg_query(raw: str) -> str:
     text = raw.strip()
-    # "Charizard Base 4/102" → name:"Charizard" set.name:"Base" number:4
-    parts = text.split()
-    if len(parts) >= 1:
-        name = parts[0]
-        clauses = [f'name:"{name}"']
-        number = next((p for p in parts if "/" in p or p.isdigit()), None)
+    lowered = text.lower()
+    name = text.split()[0] if text.split() else text
+    number = next((p for p in text.split() if "/" in p or re.fullmatch(r"\d+", p)), None)
+    # Prefer original 1999 Base Set when users say "Base Set" (not Base Set 2).
+    # API set.id filters are flaky; use set.name + exclude Base Set 2 via name match later.
+    if "base set 2" not in lowered and re.search(r"\bbase(\s+set)?\b", lowered):
+        clauses = [f'name:"{name}"', 'set.name:"Base"']
         if number:
             clauses.append(f"number:{number.split('/')[0]}")
-        set_bits = [p for p in parts[1:] if p != number and not p.isdigit()]
-        # Drop common edition words from set clause.
-        set_bits = [
-            p
-            for p in set_bits
-            if p.lower() not in {"1st", "edition", "first", "shadowless", "unlimited", "holo"}
-        ]
-        if set_bits:
-            clauses.append(f'set.name:"{" ".join(set_bits)}"')
         return " ".join(clauses)
-    return f'name:"{text}"'
+    clauses = [f'name:"{name}"']
+    if number:
+        clauses.append(f"number:{number.split('/')[0]}")
+    set_bits = [
+        p
+        for p in text.split()[1:]
+        if p != number
+        and not re.fullmatch(r"\d+", p)
+        and p.lower()
+        not in {"1st", "edition", "first", "shadowless", "unlimited", "holo", "set", "/"}
+    ]
+    if set_bits:
+        clauses.append(f'set.name:"{" ".join(set_bits)}"')
+    return " ".join(clauses)
 
 
 def _extract_tcgplayer_prices(row: dict[str, Any]) -> dict[str, float]:
@@ -314,6 +333,183 @@ def collect_ebay_api(
     return _dedupe(items)
 
 
+def collect_pricecharting(
+    http: Http,
+    settings: Settings,
+    limit: int,
+    *,
+    query: str | None = None,
+) -> list[CardListing]:
+    """Live PriceCharting product search — current prices + working product URLs."""
+    del settings
+    if not collector_enabled("pricecharting"):
+        return []
+    items: list[CardListing] = []
+    queries = build_queries(query)[: max(1, min(4, limit))]
+    # Also try a simplified query so Base Set English comps rank cleanly.
+    if query:
+        simplified = re.sub(r"\b\d+/\d+\b", "", query).strip()
+        simplified = re.sub(r"\s+", " ", simplified)
+        if simplified and simplified not in queries:
+            queries = [simplified, *queries]
+    for q in queries:
+        text = http.get_text(
+            "https://www.pricecharting.com/search-products",
+            params={"q": q, "type": "prices"},
+            headers={"Accept": "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8"},
+        )
+        if not text:
+            continue
+        items.extend(_parse_pricecharting(text, query=q, limit=limit))
+    ranked = sorted(items, key=lambda item: _pricecharting_rank(item, query or ""))
+    return _dedupe(ranked)[: max(limit, 8)]
+
+
+def _pricecharting_rank(item: CardListing, query: str) -> tuple[int, int, float]:
+    """Prefer English Base Set comps over foreign/reprint noise."""
+    url = item.url.lower()
+    title = item.title.lower()
+    q = query.lower()
+    score = 50
+    if "/pokemon-base-set/" in url and "base-set-2" not in url:
+        score -= 30
+    if "1st" in q and "1st" in title:
+        score -= 10
+    if "shadowless" in q and "shadowless" in title:
+        score -= 10
+    if any(x in url for x in ("chinese", "korean", "japanese", "base-set-2")):
+        score += 20
+    price = item.price_usd or 0.0
+    return (score, 0 if item.price_usd is not None else 1, -price)
+
+
+_PC_ROW = re.compile(
+    r'<tr id="product-(?P<pid>\d+)" data-product="\d+">(?P<body>.*?)</tr>',
+    re.I | re.S,
+)
+_PC_TITLE = re.compile(
+    r'<td class="title">.*?href="(?P<url>https://www\.pricecharting\.com/game/[^"]+)"[^>]*>\s*'
+    r"(?P<title>[^<]+)",
+    re.I | re.S,
+)
+_PC_IMG = re.compile(
+    r'src="(?P<img>https://storage\.googleapis\.com/images\.pricecharting\.com/[^"]+)"',
+    re.I,
+)
+_PC_USED = re.compile(
+    r'class="[^"]*used_price[^"]*".*?class="js-price">\s*\$?(?P<p>[0-9,]+\.\d{2})',
+    re.I | re.S,
+)
+_PC_CONSOLE = re.compile(
+    r'<div class="console-in-title">.*?<a[^>]*>\s*(?P<console>[^<]+)\s*</a>',
+    re.I | re.S,
+)
+
+
+def _parse_pricecharting(text: str, *, query: str, limit: int) -> list[CardListing]:
+    items: list[CardListing] = []
+    for match in _PC_ROW.finditer(text):
+        block = match.group("body")
+        link = _PC_TITLE.search(block)
+        if not link:
+            continue
+        title = html_lib.unescape(link.group("title")).strip()
+        url = link.group("url")
+        if not title or not url:
+            continue
+        img_match = _PC_IMG.search(block)
+        used = _PC_USED.search(block)
+        price = None
+        if used:
+            try:
+                price = float(used.group("p").replace(",", ""))
+            except ValueError:
+                price = None
+        console = ""
+        console_m = _PC_CONSOLE.search(block)
+        if console_m:
+            console = html_lib.unescape(console_m.group("console")).strip()
+        items.append(
+            listing(
+                source="pricecharting",
+                url=url,
+                title=f"{title} — {console}".strip(" —"),
+                body=f"PriceCharting used/ungraded market for {query}",
+                price_usd=price,
+                image_urls=[img_match.group("img")] if img_match else [],
+                condition="market",
+                query=query,
+                extra={
+                    "engine": "pricecharting",
+                    "product_id": match.group("pid"),
+                    "live": True,
+                },
+            )
+        )
+        if len(items) >= limit:
+            break
+    return items
+
+
+def collect_live_searches(
+    http: Http,
+    settings: Settings,
+    limit: int,
+    *,
+    query: str | None = None,
+    sites: list[str] | None = None,
+) -> list[CardListing]:
+    """Current marketplace search pages (always live when opened)."""
+    del http, settings, limit
+    if not collector_enabled("live_searches"):
+        return []
+    wanted = list(enabled_sites())
+    if sites:
+        wanted = [name for name in wanted if name in sites]
+    # Skip pricecharting here — dedicated collector scrapes real product rows.
+    wanted = [name for name in wanted if name != "pricecharting"]
+    items: list[CardListing] = []
+    for q in build_queries(query)[:3]:
+        encoded = quote_plus(q)
+        templates = {
+            "ebay": (
+                f"https://www.ebay.com/sch/i.html?_nkw={encoded}&_sacat=183454&LH_TitleDesc=1",
+                "eBay live search — current Pokemon card listings",
+            ),
+            "tcgplayer": (
+                "https://www.tcgplayer.com/search/pokemon/product?"
+                f"productLineName=pokemon&q={encoded}&view=grid",
+                "TCGPlayer live search — current products",
+            ),
+            "mercari": (
+                f"https://www.mercari.com/search/?keyword={encoded}",
+                "Mercari live search — current listings",
+            ),
+            "trollandtoad": (
+                f"https://www.trollandtoad.com/category.php?selected-cat=0&search-words={encoded}",
+                "Troll and Toad live search",
+            ),
+        }
+        for site in wanted:
+            if site not in templates:
+                continue
+            url, body = templates[site]
+            items.append(
+                listing(
+                    source=site,
+                    url=url,
+                    title=f"{q} — live {site} search",
+                    body=body,
+                    price_usd=None,
+                    image_urls=[],
+                    condition="search",
+                    query=q,
+                    extra={"engine": "live_search", "live": True},
+                )
+            )
+    return _dedupe(items)
+
+
 def collect_inbox(
     http: Http,
     settings: Settings,
@@ -362,8 +558,10 @@ def collect_inbox(
 
 
 CARD_COLLECTORS = {
-    "brave_markets": collect_brave_markets,
+    "pricecharting": collect_pricecharting,
     "pokemontcg": collect_pokemontcg,
+    "live_searches": collect_live_searches,
+    "brave_markets": collect_brave_markets,
     "ebay_api": collect_ebay_api,
     "inbox": collect_inbox,
 }

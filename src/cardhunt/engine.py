@@ -33,18 +33,25 @@ def hunt(
     limit: int | None = None,
     demo: bool = False,
     skip_vision: bool = False,
+    only: list[str] | None = None,
 ) -> dict:
     settings = as_tc_settings()
     store = open_card_store(settings)
     items = demo_card_listings() if demo else None
+    # Live hunts prefer sources that work without Brave: PriceCharting + Pokemon TCG
+    # + marketplace search deep-links. Brave still runs when a key exists.
+    if only is None and not demo:
+        only = ["pricecharting", "pokemontcg", "live_searches", "brave_markets", "ebay_api"]
     return run_cards(
         query=query,
+        only=only,
         sites=sites,
         limit=limit,
         settings=settings,
         store=store,
         items=items,
         skip_vision=skip_vision or demo,
+        replace=not demo,
     )
 
 

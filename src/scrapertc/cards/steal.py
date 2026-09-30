@@ -19,6 +19,11 @@ from scrapertc.cards.models import CardListing, StealHit
 def score_steal(listing: CardListing) -> StealHit | None:
     if listing.extra.get("catalog"):
         return None
+    # Market comps / search deep-links aren't seller mislistings.
+    if listing.condition in {"market", "search", "reference"}:
+        return None
+    if listing.extra.get("engine") in {"pricecharting", "live_search"}:
+        return None
     cfg = steal_config()
     text = listing.text
     card = match_high_value_card(text)

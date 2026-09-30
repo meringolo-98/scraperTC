@@ -52,14 +52,18 @@ sites:
     scope: "site:facebook.com/marketplace"
     query_suffix: "pokemon card"
   trollandtoad:
-    enabled: true
+    enabled: false
     scope: "site:trollandtoad.com"
     query_suffix: "pokemon"
 
 collectors:
-  brave_markets:
+  pricecharting:
     enabled: true
   pokemontcg:
+    enabled: true
+  live_searches:
+    enabled: true
+  brave_markets:
     enabled: true
   ebay_api:
     enabled: true

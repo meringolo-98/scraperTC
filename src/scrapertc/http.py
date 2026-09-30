@@ -69,8 +69,14 @@ class Http:
             return None
         return response.json()
 
-    def get_text(self, url: str, *, params: dict[str, Any] | None = None) -> str | None:
-        response = self.get(url, params=params)
+    def get_text(
+        self,
+        url: str,
+        *,
+        params: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
+    ) -> str | None:
+        response = self.get(url, params=params, headers=headers)
         if response.status_code != 200:
             return None
         return response.text

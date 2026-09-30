@@ -13,7 +13,9 @@ Gate 2 is a deterministic scorer (competition / breakthrough / saturation). It i
 
 Target: cannabis tissue culture / remediation lab + genomic prediction for breeders.
 
-**Secondary product:** Pokemon card marketplace intake (`scrapertc cards …`) reuses the same scrape permission (User-Agent, delay, Brave quota) under a `budget_share` cap. Card rows live in `data/cards.db`, not the chatter store.
+**CardHunt (phone-first):** standalone Pokemon card finder — see [CARDHUNT.md](CARDHUNT.md). Run `cardhunt serve` and open the UI on your phone. No TC pipeline setup required. Demo works offline.
+
+**Optional CLI:** `scrapertc cards …` uses the same card engine if you already run Gate 1 on a main PC.
 
 ## Quick start
 

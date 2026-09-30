@@ -23,6 +23,9 @@ data/cards/images/*
 !data/cards/images/.gitkeep
 data/cards/*.db
 data/cards/export.jsonl
+data/cardhunt.db
+data/cardhunt/*
+!data/cardhunt/.gitkeep
 .coverage
 htmlcov/
 *.log

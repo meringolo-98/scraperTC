@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "scrapertc"
 version = "0.2.0"
-description = "Scraper for cannabis TC chatter plus secondary Pokemon card marketplace intake."
+description = "TC chatter scraper plus CardHunt — phone-first Pokemon card finder."
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [{ name = "Matt Meringolo" }]
@@ -30,6 +30,7 @@ dev = [
 
 [project.scripts]
 scrapertc = "scrapertc.cli:app"
+cardhunt = "cardhunt.cli:app"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -47,9 +48,11 @@ select = ["E", "F", "I", "UP", "B"]
 "src/scrapertc/cli.py" = ["B008"]
 "src/scrapertc/gate2/report.py" = ["E501"]
 "src/scrapertc/cards/report.py" = ["E501"]
+"src/cardhunt/cli.py" = ["B008"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
 scrapertc = ["assets/*.json"]
+cardhunt = ["static/*"]

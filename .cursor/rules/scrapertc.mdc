@@ -14,9 +14,14 @@ This product is a **chatter scraper**. It is not ChatGPT, Fable, Asta, or any ot
 - Prefer official / public APIs. No login scrapers, no unofficial LinkedIn/Meta/X HTML harvest, no scraping google.com SERP HTML.
 - Collectors must fail independently. Brave is the web-wide index; Google CSE is legacy.
 
-## Secondary product: Pokemon cards
+## CardHunt (phone-first, from scratch)
 
-`scrapertc cards …` is a **secondary use** of the same scrape permission and budget:
+`cardhunt serve` is the phone UI. No Gate 1 / TC pipeline config required for demo.
+Prefer documenting phone use in `CARDHUNT.md`. Do not require users to set up cannabis TC collectors to hunt cards.
+
+## Optional: scrapertc cards CLI
+
+`scrapertc cards …` can share Gate 1 scrape permission and budget when that pipeline is already running:
 
 - Same User-Agent, `request_delay_seconds`, Brave key, and HTTP retry/pacing (`Http`).
 - Cap secondary spend with `config/cards.yaml` → `budget_share` (default 0.25 of Gate 1 `default_limit`).

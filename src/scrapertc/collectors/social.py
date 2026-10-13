@@ -16,7 +16,9 @@ def collect_reddit(http: Http, settings: Settings, limit: int) -> list[ChatterIt
     headers = {"Authorization": f"bearer {token}"} if token else None
     host = "https://oauth.reddit.com" if token else "https://www.reddit.com"
     items: list[ChatterItem] = []
-    reddit_q = str(conf.get("search_query") or "cannabis tissue culture OR meristem OR HLVd")
+    reddit_q = str(
+        conf.get("search_query") or "cannabis tissue culture OR meristem OR HLVd OR remediation"
+    )
     for query in live_queries(priority_cap=20, broad_cap=36):
         items.extend(
             _reddit_paged(

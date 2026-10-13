@@ -3,6 +3,10 @@
 # plus company names from competitors.yaml. --broad also adds tc_companies (noisier).
 
 priority:
+  # Bare terms the user wants always in the Gate 1 net
+  - meristem
+  - HLVd
+  - remediation
   - "cannabis tissue culture"
   - "cannabis meristem"
   - "hop latent viroid"
@@ -11,16 +15,20 @@ priority:
   - "predictive breeding cannabis"
   - "cannabis tissue culture lab"
   - "HLVd cannabis"
+  - "HLVd remediation"
+  - "viroid remediation"
   - "clean stock cannabis"
   - "virus-free cannabis"
 
 cannabis_tc:
+  - meristem
+  - HLVd
+  - remediation
   - "cannabis tissue culture"
   - "marijuana tissue culture"
   - "hemp tissue culture"
   - "cannabis meristem"
   - "cannabis micropropagation"
-  - "HLVd"
   - "hop latent viroid"
   - "viroid remediation"
   - "virus-free cannabis"
@@ -33,12 +41,15 @@ cannabis_tc:
   - "tissue culture clones cannabis"
   - "cannabis nursery tissue culture"
   - "HLVd remediation"
+  - "cannabis remediation"
   - "hop latent cannabis"
   - "marijuana meristem"
   - "hemp micropropagation"
   - "licensed cannabis tissue culture"
   - "cannabis plantlets tissue culture"
   - "meristem culture cannabis"
+  - "meristem tip culture"
+  - "pathogen remediation cannabis"
 
 genomic_breeding:
   - "cannabis genomic selection"
@@ -83,12 +94,12 @@ mammalian:
   - "iPSC"
 
 scholarly:
-  - '(cannabis OR hemp OR "Cannabis sativa") AND (tissue culture OR micropropagation OR meristem OR "hop latent" OR viroid)'
+  - '(cannabis OR hemp OR "Cannabis sativa") AND (tissue culture OR micropropagation OR meristem OR "hop latent" OR HLVd OR viroid OR remediation)'
   - '(cannabis OR hemp OR "Cannabis sativa") AND ("genomic selection" OR "genomic prediction" OR GWAS OR "marker-assisted")'
   - '(cannabis OR hemp) AND (CRISPR OR phenotyping OR "whole genome")'
 
 arxiv:
-  - 'all:"cannabis" AND (all:"tissue culture" OR all:meristem OR all:"genomic selection")'
+  - 'all:"cannabis" AND (all:"tissue culture" OR all:meristem OR all:HLVd OR all:remediation OR all:"genomic selection")'
   - 'all:"Cannabis sativa" AND (all:micropropagation OR all:GWAS)'
 
 web_scopes:

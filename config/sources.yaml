@@ -5,7 +5,7 @@ default_limit: 40
 collectors:
   reddit:
     enabled: true
-    search_query: "cannabis tissue culture OR meristem OR HLVd OR viroid OR genomic selection OR micropropagation"
+    search_query: "cannabis tissue culture OR meristem OR HLVd OR remediation OR viroid OR genomic selection OR micropropagation"
     subreddits:
       - tissuecultureplants
       - TCLabs
@@ -21,7 +21,7 @@ collectors:
     enabled: true
     feeds:
       - name: google-news-cannabis-tc
-        url: "https://news.google.com/rss/search?q=%22cannabis+tissue+culture%22+OR+%22cannabis+meristem%22+OR+HLVd+OR+%22hop+latent+viroid%22&hl=en-US&gl=US&ceid=US:en"
+        url: "https://news.google.com/rss/search?q=%22cannabis+tissue+culture%22+OR+%22cannabis+meristem%22+OR+HLVd+OR+remediation+OR+%22hop+latent+viroid%22&hl=en-US&gl=US&ceid=US:en"
       - name: google-news-cannabis-genomics
         url: "https://news.google.com/rss/search?q=%22cannabis+genomic%22+OR+%22genomic+selection%22+cannabis+OR+%22predictive+breeding%22+cannabis&hl=en-US&gl=US&ceid=US:en"
       - name: google-news-tc-labs

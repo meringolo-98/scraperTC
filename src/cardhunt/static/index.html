@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f2a1c" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>CardHunt</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/app.css" />
+</head>
+<body>
+  <div class="felt" aria-hidden="true"></div>
+  <header class="hero">
+    <p class="brand">CardHunt</p>
+    <h1>Find the listing.<br />Catch the steal.</h1>
+    <p class="lede">Search eBay, TCG, and other marketplaces. Grade photos. Flag mispriced gems.</p>
+    <form id="hunt-form" class="hunt-form">
+      <label class="sr-only" for="query">Card search</label>
+      <input id="query" name="query" type="search" enterkeyhint="search"
+             placeholder="Charizard Base 4/102 1st edition" autocomplete="off" required />
+      <div class="cta-row">
+        <button type="submit" class="btn primary" id="hunt-btn">Hunt live</button>
+        <button type="button" class="btn ghost" id="demo-btn">Offline demo</button>
+      </div>
+      <p class="hint" id="status-line">Loading…</p>
+    </form>
+  </header>
+
+  <main id="results" class="results" hidden>
+    <section class="panel" id="steals-panel">
+      <h2>Steals</h2>
+      <p class="section-note">Wrong title, right card — underpriced vs floor.</p>
+      <ul id="steals-list" class="list"></ul>
+    </section>
+    <section class="panel" id="listings-panel">
+      <h2>Listings</h2>
+      <p class="section-note">Marketplace hits + grade cues.</p>
+      <ul id="listings-list" class="list"></ul>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <span>CardHunt v<span id="ver">0.1</span></span>
+    <span id="keys"></span>
+  </footer>
+  <script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,3 +1,5 @@
 {
-  "install": "pip install -e \".[dev]\""
+  "name": "scraperTC",
+  "install": "bash .cursor/install.sh",
+  "start": "bash .cursor/start.sh"
 }
